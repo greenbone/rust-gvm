@@ -180,13 +180,13 @@ client.modify_agent_group(modify).await?;
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-`CollectionUpdate::Omitted` preserves agent membership. Current gvmd supports
-non-empty replacement but has no effective membership-clear wire form:
-`<agents/>` is collapsed to the same null list as omission and leaves existing
-relationships in place. `CollectionUpdate::Clear` is therefore rejected as a
-typed request error before transport. Clearing can be enabled once gvmd
-distinguishes a present empty list from an omitted one in its parser and SQL
-mutation path.
+`CollectionUpdate::Omitted` preserves agent membership, a non-empty
+replacement emits repeated `agent` children, and `CollectionUpdate::Clear`
+emits `<agents/>`. Clear support depends on
+[greenbone/gvmd#3251](https://github.com/greenbone/gvmd/pull/3251), based on gvmd
+revision `9163aa969b74d8ee4d06320fe15d2e685fc7f283`, which distinguishes a present
+empty list from omission and deletes existing relationships. Land and deploy
+that server change before publishing or deploying this downstream behavior.
 
 List requests implement `Default`; detail, clone, and delete requests use
 their resource identifier constructors. The six named client conveniences

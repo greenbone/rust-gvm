@@ -167,33 +167,39 @@ where
     task_id
 }
 
-async fn assert_agent_group_clear_fails_before_transport<C>(
+async fn assert_agent_group_clear_is_sent_and_applied<C>(
     client: &mut GmpNext<C>,
     server: &MockGmpServer,
     agent_group_id: &EntityId,
 ) where
     C: GvmConnection + Send,
 {
-    let history_len = server.command_history().len();
-    let mut unsupported_clear =
-        ModifyAgentGroupRequest::new(agent_group_id.clone(), "0 */10 * * *");
-    unsupported_clear.agent_ids = CollectionUpdate::Clear;
-    let clear_error = client
-        .modify_agent_group(unsupported_clear)
+    server.clear_history();
+    let mut clear = ModifyAgentGroupRequest::new(agent_group_id.clone(), "0 */10 * * *");
+    clear.agent_ids = CollectionUpdate::Clear;
+    let response = client
+        .modify_agent_group(clear)
         .await
-        .expect_err("gvmd cannot clear agent-group membership");
-    assert!(matches!(
-        clear_error,
-        GvmError::Request(gvm_gmp::GmpRequestError::InvalidField {
-            field: "agent_ids",
-            ..
-        })
-    ));
+        .expect("agent-group membership clear should be accepted");
+    assert_eq!(response.status, 200);
+
+    let history = server.command_history();
+    assert_eq!(history.len(), 1);
+    let command = history.last().expect("modify command recorded");
+    assert_eq!(command.command_name(), "modify_agent_group");
     assert_eq!(
-        server.command_history().len(),
-        history_len,
-        "unsupported clear intent must fail before transport"
+        String::from_utf8(command.raw_xml().to_vec()).expect("history should be UTF-8"),
+        format!(
+            "<modify_agent_group agent_group_id=\"{}\"><scheduler_cron_time>0 */10 * * *</scheduler_cron_time><agents/></modify_agent_group>",
+            agent_group_id.as_str()
+        )
     );
+
+    let cleared = client
+        .get_agent_group(GetAgentGroupRequest::new(agent_group_id.clone()))
+        .await
+        .expect("cleared agent group should remain readable");
+    assert!(cleared.items[0].agents.is_empty());
 }
 
 async fn assert_create_oci_image_target_task_round_trip<C>(
@@ -649,8 +655,10 @@ async fn next_client_agent_groups_round_trip() {
         updated_response.items[0].scheduler_cron_time.as_deref(),
         Some("0 */10 * * *")
     );
+    assert_eq!(updated_response.items[0].agents.len(), 1);
+    assert_eq!(updated_response.items[0].agents[0].id.as_str(), "agent-3");
 
-    assert_agent_group_clear_fails_before_transport(&mut client, &server, &agent_group_id).await;
+    assert_agent_group_clear_is_sent_and_applied(&mut client, &server, &agent_group_id).await;
 
     delete_task(&server, &task_id).await;
     let delete_response = client

@@ -65,10 +65,11 @@ operations. Their complete requests now own filters, identifiers, scheduler
 data, repeated agent relationships, mutation fields, semantic aliases, and XML
 encoding. Three options types and six forwarding builders are removed; the six
 named client helpers accept the canonical requests unchanged. Issue #812
-separates membership omission from non-empty replacement and rejects clear
-intent before transport because pinned and current gvmd preserve memberships
-for `<agents/>`; enabling clear requires an upstream parser/persistence change.
-Independent
+separates membership omission, non-empty replacement, and clear. Clear emits
+`<agents/>` and is accepted by the typed client. This depends on
+[greenbone/gvmd#3251](https://github.com/greenbone/gvmd/pull/3251), based on revision
+`9163aa969b74d8ee4d06320fe15d2e685fc7f283`; that server change must land before
+the downstream support is published or deployed. Independent
 [agent-group gvmd evidence](agent-group-request-gvmd-evidence.md) records the
 server contract.
 

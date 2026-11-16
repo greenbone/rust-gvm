@@ -37,15 +37,19 @@ pinned by this repository:
   or empty
   ([pinned persistence](https://github.com/greenbone/gvmd/blob/55e5d4c657c48ce52ee340c2439680418bfe1a4d/src/manage_sql_agent_groups.c#L345-L364),
   [current persistence](https://github.com/greenbone/gvmd/blob/c11dc2e5adcfe97bb158ff73c51bd5dc5fee2935/src/manage_sql_agent_groups.c#L345-L376)).
-  Therefore no real membership-clear wire form exists: omission preserves,
-  non-empty `<agents>` replaces, and a Rust `Clear` request must fail locally
-  rather than emit the successful server no-op `<agents/>`.
+  Therefore those unpatched revisions have no real membership-clear wire form:
+  omission preserves and non-empty `<agents>` replaces, while `<agents/>` is a
+  successful server no-op.
 - [Upstream gvmd issue #3230](https://github.com/greenbone/gvmd/issues/3230)
-  must preserve empty-element presence separately from omission,
-  then treat `NULL` as preserve and a present zero-count list as deleting all
-  `agent_group_agents` rows without entering the COPY path. Its controller
-  synchronization/rollback flow must continue to update the union of old and
-  replacement agents so removed agents lose stale cron configuration.
+  is implemented by dependency PR
+  [greenbone/gvmd#3251](https://github.com/greenbone/gvmd/pull/3251), based on
+  gvmd revision `9163aa969b74d8ee4d06320fe15d2e685fc7f283`. It preserves empty-element
+  presence separately from omission, treats `NULL` as preserve, and treats a
+  present zero-count list as deleting all `agent_group_agents` rows without
+  entering the COPY path. Its controller synchronization/rollback flow updates
+  the union of old and replacement agents so removed agents lose stale cron
+  configuration. That upstream change must land before this downstream clear
+  support is published or deployed.
 - The central parser routes `delete_agent_group` through gvmd's common
   deletion path
   ([line 5208](https://github.com/greenbone/gvmd/blob/55e5d4c657c48ce52ee340c2439680418bfe1a4d/src/gmp.c#L5208)).
@@ -55,12 +59,13 @@ mock evidence:
 
 - request-module tests assert independent exact XML for all six semantic
   operations and verify their metadata and static response types; the external
-  `agent_groups_test` sidecar separately covers preserve and replacement XML
-  plus rejection of unsupported clear intent;
+  `agent_groups_test` sidecar separately covers exact preserve, replacement,
+  and clear XML;
 - `gvm-client/tests/canonical_request_foundation.rs` proves every operation is
   rejected on GMP 22.7 with empty transport history;
 - the stateful versioned-client test exercises create, clone, list, detail,
-  modify, and delete through the request-accepting typed facade on GMP 22.8;
+  modify, clear, and delete through the request-accepting typed facade on GMP
+  22.8, including the exact sent clear command and resulting empty membership;
 - mock-server version-gating tests separately verify 22.7 rejection and 22.8
   acceptance of the encoded wire commands.
 
