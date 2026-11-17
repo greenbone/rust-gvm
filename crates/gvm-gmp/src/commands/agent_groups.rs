@@ -159,10 +159,8 @@ pub struct ModifyAgentGroupRequest {
     pub comment: Option<String>,
     /// Agent-membership update.
     ///
-    /// Omission preserves membership and a non-empty replacement updates it.
-    /// Current gvmd cannot clear agent-group membership, so [`CollectionUpdate::Clear`]
-    /// is rejected during validation instead of being encoded as the server no-op
-    /// `<agents/>`.
+    /// Omission preserves membership, a non-empty replacement updates it, and
+    /// [`CollectionUpdate::Clear`] emits an empty `agents` element to clear it.
     pub agent_ids: CollectionUpdate<EntityId>,
 }
 
@@ -181,18 +179,6 @@ impl ModifyAgentGroupRequest {
 }
 
 impl GmpRequestCodec for ModifyAgentGroupRequest {
-    fn validate(&self) -> Result<(), GmpRequestError> {
-        if matches!(self.agent_ids, CollectionUpdate::Clear)
-            || matches!(&self.agent_ids, CollectionUpdate::Replace(agent_ids) if agent_ids.is_empty())
-        {
-            return Err(GmpRequestError::invalid_field(
-                "agent_ids",
-                "gvmd does not support clearing agent-group membership",
-            ));
-        }
-        Ok(())
-    }
-
     fn command(&self) -> Option<GmpCommand> {
         Some(GmpCommand::new("modify_agent_group"))
     }
@@ -275,8 +261,14 @@ fn modify_agent_group_command(request: &ModifyAgentGroupRequest) -> XmlCommand {
     cmd.add_element_with_text("scheduler_cron_time", &request.scheduler_cron_time);
     add_text_element(&mut cmd, "name", request.name.as_deref());
     add_text_element(&mut cmd, "comment", request.comment.as_deref());
-    if let CollectionUpdate::Replace(agent_ids) = &request.agent_ids {
-        add_agent_elements(&mut cmd, agent_ids);
+    match &request.agent_ids {
+        CollectionUpdate::Omitted => {}
+        CollectionUpdate::Replace(agent_ids) if !agent_ids.is_empty() => {
+            add_agent_elements(&mut cmd, agent_ids);
+        }
+        CollectionUpdate::Replace(_) | CollectionUpdate::Clear => {
+            cmd.add_element("agents");
+        }
     }
     cmd
 }

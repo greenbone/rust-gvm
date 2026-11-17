@@ -338,6 +338,52 @@ async fn stateful_create_agent_group_task_preserves_agent_group_id() {
 }
 
 #[tokio::test]
+async fn stateful_modify_agent_group_clears_non_empty_membership() {
+    let Some(server) = stateful_server_with_version(GmpVersion::V22_8).await else {
+        return;
+    };
+    let mut stream = connect_and_auth(&server).await;
+
+    let created = send_recv(
+        &mut stream,
+        b"<create_agent_group><name>Agents</name><scheduler_cron_time>0 */5 * * *</scheduler_cron_time><agents><agent id=\"agent-1\"/><agent id=\"agent-2\"/></agents></create_agent_group>",
+    )
+    .await;
+    assert_eq!(created.status_code(), Some(201));
+    let group_id = created.id().expect("agent group should have id");
+
+    let before = send_recv(
+        &mut stream,
+        format!("<get_agent_groups agent_group_id=\"{group_id}\"/>").as_bytes(),
+    )
+    .await;
+    let before = before.as_str().expect("valid UTF-8");
+    assert!(before.contains("<agent id=\"agent-1\"><name></name></agent>"));
+    assert!(before.contains("<agent id=\"agent-2\"><name></name></agent>"));
+
+    let modified = send_recv(
+        &mut stream,
+        format!(
+            "<modify_agent_group agent_group_id=\"{group_id}\"><scheduler_cron_time>0 */10 * * *</scheduler_cron_time><agents/></modify_agent_group>"
+        )
+        .as_bytes(),
+    )
+    .await;
+    assert_eq!(modified.status_code(), Some(200));
+
+    let after = send_recv(
+        &mut stream,
+        format!("<get_agent_groups agent_group_id=\"{group_id}\"/>").as_bytes(),
+    )
+    .await;
+    let after = after.as_str().expect("valid UTF-8");
+    assert!(after.contains("<agents></agents>"));
+    assert!(!after.contains("<agent id="));
+
+    server.shutdown().await;
+}
+
+#[tokio::test]
 async fn stateful_create_oci_image_target_task_preserves_target_id() {
     let Some(server) = stateful_server_with_version(GmpVersion::V22_8).await else {
         return;

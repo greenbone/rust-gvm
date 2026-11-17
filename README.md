@@ -532,12 +532,14 @@ Agent groups also use complete canonical requests on GMP 22.8. Their six
 list/detail/create/clone/modify/delete helpers accept the same request values
 as `execute`; filters, scheduler data, repeated agent IDs, and mutation fields
 no longer require separate options values or free builders. Agent membership
-updates explicitly distinguish omission from non-empty replacement. Although
-the shared type can represent clear intent, current gvmd treats `<agents/>` as
-preserve, so the typed request rejects `Clear` before transport instead of
-claiming a clear that the server does not perform. Web-application target
-excluded URLs use the same shared update type and do support all three states;
-their empty element maps to gvmd's SQL `NULL` clear operation.
+updates explicitly distinguish omission, non-empty replacement, and clear.
+`CollectionUpdate::Clear` emits `<agents/>`; omission emits no `agents`
+element. This downstream behavior depends on
+[greenbone/gvmd#3251](https://github.com/greenbone/gvmd/pull/3251), based on
+gvmd revision `9163aa969b74d8ee4d06320fe15d2e685fc7f283`, so that server change must
+land before this client support is published or deployed. Web-application
+target excluded URLs use the same shared update type; their empty element maps
+to gvmd's SQL `NULL` clear operation.
 
 Alerts use complete request values for list, detail, create, clone, modify,
 delete, test, and report-trigger operations. Required create fields are typed,
