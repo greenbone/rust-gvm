@@ -1590,6 +1590,12 @@ impl SessionHandler {
         if let Some(scheduler_cron_time) = parse_element_text(raw_xml, "scheduler_cron_time") {
             resource.set_attr("scheduler_cron_time", &scheduler_cron_time);
         }
+        if resource_type == "agent_group" {
+            let agent_ids = nested_child_ids(cmd, "agents", "agent");
+            if !agent_ids.is_empty() {
+                resource.set_attr("agent_ids", &agent_ids.join(","));
+            }
+        }
         if resource_type == "filter" {
             if let Some(term) = parse_element_text(raw_xml, "term") {
                 resource.set_attr("term", &term);
@@ -2481,6 +2487,14 @@ impl SessionHandler {
         let new_fixed_note = parse_element_text(raw_xml, "fixed_note");
         let new_closed_note = parse_element_text(raw_xml, "closed_note");
         let new_scheduler_cron_time = parse_element_text(raw_xml, "scheduler_cron_time");
+        let new_agent_group_agent_ids = (resource_type == "agent_group")
+            .then(|| {
+                cmd.children
+                    .iter()
+                    .any(|child| child.name == "agents")
+                    .then(|| nested_child_ids(cmd, "agents", "agent"))
+            })
+            .flatten();
         let new_icalendar = if resource_type == "schedule" {
             let Some(icalendar) =
                 parse_element_text(raw_xml, "icalendar").filter(|value| !value.trim().is_empty())
@@ -3071,6 +3085,13 @@ impl SessionHandler {
             }
             if let Some(ref scheduler_cron_time) = new_scheduler_cron_time {
                 r.set_attr("scheduler_cron_time", scheduler_cron_time);
+            }
+            if let Some(ref agent_ids) = new_agent_group_agent_ids {
+                if agent_ids.is_empty() {
+                    r.remove_attr("agent_ids");
+                } else {
+                    r.set_attr("agent_ids", &agent_ids.join(","));
+                }
             }
             if resource_type == "schedule" {
                 if let Some(ref icalendar) = new_icalendar {

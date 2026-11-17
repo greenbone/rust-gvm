@@ -933,6 +933,21 @@ impl Resource {
                 xml_escape(self.attr("users").unwrap_or_default()),
             ));
         }
+        if self.resource_type == "agent_group" {
+            xml.push_str("<agents>");
+            for agent_id in self
+                .attr("agent_ids")
+                .unwrap_or_default()
+                .split(',')
+                .filter(|agent_id| !agent_id.is_empty())
+            {
+                xml.push_str(&format!(
+                    "<agent id=\"{}\"><name></name></agent>",
+                    xml_escape_attr(agent_id),
+                ));
+            }
+            xml.push_str("</agents>");
+        }
         if self.resource_type == "target" {
             let alive_test = self
                 .attr("alive_test")
@@ -1142,6 +1157,9 @@ impl Resource {
             if matches!(self.resource_type.as_str(), "group" | "role")
                 && matches!(k.as_str(), "users" | "special_full")
             {
+                continue;
+            }
+            if self.resource_type == "agent_group" && k == "agent_ids" {
                 continue;
             }
             if self.resource_type == "target"
