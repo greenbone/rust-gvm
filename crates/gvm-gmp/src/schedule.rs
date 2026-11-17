@@ -6,7 +6,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-use chrono::{DateTime, NaiveDateTime, SecondsFormat, Utc};
+use jiff::{civil::DateTime, Timestamp};
 use uuid::Uuid;
 
 /// A normalized UTC timestamp used by typed schedule APIs.
@@ -23,13 +23,13 @@ impl ScheduleTimestamp {
     /// # Errors
     /// Returns an error when `value` is not a valid RFC 3339 timestamp.
     pub fn parse(value: &str) -> Result<Self, ScheduleTimestampError> {
-        let parsed = DateTime::parse_from_rfc3339(value)
-            .map_err(|_| ScheduleTimestampError(value.to_string()))?;
-        Ok(Self(
-            parsed
-                .with_timezone(&Utc)
-                .to_rfc3339_opts(SecondsFormat::Secs, true),
-        ))
+        let (parsed, leap_second) =
+            parse_rfc3339(value).map_err(|_| ScheduleTimestampError(value.to_string()))?;
+        let mut normalized = format!("{parsed:.0}");
+        if leap_second {
+            normalized.replace_range(17..19, "60");
+        }
+        Ok(Self(normalized))
     }
 
     /// Return the normalized RFC 3339 representation.
@@ -39,16 +39,93 @@ impl ScheduleTimestamp {
     }
 
     fn to_icalendar_value(&self) -> String {
-        DateTime::parse_from_rfc3339(&self.0)
-            .expect("ScheduleTimestamp invariant")
-            .with_timezone(&Utc)
-            .format("%Y%m%dT%H%M%SZ")
-            .to_string()
+        format!(
+            "{}{}{}T{}{}{}Z",
+            &self.0[0..4],
+            &self.0[5..7],
+            &self.0[8..10],
+            &self.0[11..13],
+            &self.0[14..16],
+            &self.0[17..19],
+        )
     }
 
-    fn from_utc_datetime(value: NaiveDateTime) -> Self {
-        Self(value.and_utc().to_rfc3339_opts(SecondsFormat::Secs, true))
+    fn from_utc_datetime(value: DateTime, leap_second: bool) -> Self {
+        let mut normalized = value.strftime("%Y-%m-%dT%H:%M:%SZ").to_string();
+        if leap_second {
+            normalized.replace_range(17..19, "60");
+        }
+        Self(normalized)
     }
+}
+
+fn parse_rfc3339(value: &str) -> Result<(Timestamp, bool), ()> {
+    let bytes = value.as_bytes();
+    if bytes.len() < 20
+        || bytes.get(4) != Some(&b'-')
+        || bytes.get(7) != Some(&b'-')
+        || !matches!(bytes.get(10), Some(b'T' | b't' | b' '))
+        || bytes.get(13) != Some(&b':')
+        || bytes.get(16) != Some(&b':')
+        || !bytes[..4].iter().all(u8::is_ascii_digit)
+        || !bytes[5..7].iter().all(u8::is_ascii_digit)
+        || !bytes[8..10].iter().all(u8::is_ascii_digit)
+        || !bytes[11..13].iter().all(u8::is_ascii_digit)
+        || !bytes[14..16].iter().all(u8::is_ascii_digit)
+        || !bytes[17..19].iter().all(u8::is_ascii_digit)
+    {
+        return Err(());
+    }
+
+    let mut offset_start = 19;
+    if bytes.get(19) == Some(&b'.') {
+        offset_start += 1;
+        while bytes.get(offset_start).is_some_and(u8::is_ascii_digit) {
+            offset_start += 1;
+        }
+        if offset_start == 20 {
+            return Err(());
+        }
+    }
+    match &bytes[offset_start..] {
+        [b'Z' | b'z'] => {}
+        [b'+' | b'-', hour1, hour2, b':', minute1, minute2]
+            if hour1.is_ascii_digit()
+                && hour2.is_ascii_digit()
+                && minute1.is_ascii_digit()
+                && minute2.is_ascii_digit()
+                && (hour1 - b'0') * 10 + (hour2 - b'0') <= 23
+                && (minute1 - b'0') * 10 + (minute2 - b'0') <= 59 => {}
+        _ => return Err(()),
+    }
+
+    let leap_second = &bytes[17..19] == b"60";
+    let mut parseable = bytes.to_vec();
+    parseable[10] = b'T';
+    if leap_second {
+        parseable[17..19].copy_from_slice(b"59");
+    }
+    if offset_start > 29 {
+        parseable.drain(29..offset_start);
+    }
+    if parseable.last() == Some(&b'z') {
+        *parseable.last_mut().expect("non-empty RFC 3339 input") = b'Z';
+    }
+    let parseable = String::from_utf8(parseable).map_err(|_| ())?;
+    parseable
+        .parse::<Timestamp>()
+        .map(|parsed| (parsed, leap_second))
+        .map_err(|_| ())
+}
+
+fn parse_compact_datetime(value: &str) -> Result<(DateTime, bool), jiff::Error> {
+    let leap_second = value.as_bytes().get(13..15) == Some(b"60");
+    if !leap_second {
+        return DateTime::strptime("%Y%m%dT%H%M%S", value).map(|parsed| (parsed, false));
+    }
+    let mut parseable = value.as_bytes().to_vec();
+    parseable[13..15].copy_from_slice(b"59");
+    DateTime::strptime("%Y%m%dT%H%M%S", parseable).map(|parsed| (parsed, true))
 }
 
 impl fmt::Display for ScheduleTimestamp {
@@ -459,7 +536,7 @@ fn parse_start(
     }
     if let Some(timezone_name) = explicit_timezone {
         let value = property.value.strip_suffix('Z').unwrap_or(&property.value);
-        NaiveDateTime::parse_from_str(value, "%Y%m%dT%H%M%S").map_err(|_| {
+        parse_compact_datetime(value).map_err(|_| {
             ScheduleIcalendarError::Malformed(format!("invalid DTSTART: {}", property.value))
         })?;
         return Ok(ScheduleStartObservation::Unsupported {
@@ -468,14 +545,14 @@ fn parse_start(
         });
     }
     if let Some(value) = property.value.strip_suffix('Z') {
-        let parsed = NaiveDateTime::parse_from_str(value, "%Y%m%dT%H%M%S").map_err(|_| {
+        let (parsed, leap_second) = parse_compact_datetime(value).map_err(|_| {
             ScheduleIcalendarError::Malformed(format!("invalid UTC DTSTART: {}", property.value))
         })?;
         return Ok(ScheduleStartObservation::Supported(
-            ScheduleTimestamp::from_utc_datetime(parsed),
+            ScheduleTimestamp::from_utc_datetime(parsed, leap_second),
         ));
     }
-    NaiveDateTime::parse_from_str(&property.value, "%Y%m%dT%H%M%S").map_err(|_| {
+    parse_compact_datetime(&property.value).map_err(|_| {
         ScheduleIcalendarError::Malformed(format!("invalid DTSTART: {}", property.value))
     })?;
     Ok(ScheduleStartObservation::Unsupported {

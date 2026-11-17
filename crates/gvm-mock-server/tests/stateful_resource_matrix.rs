@@ -900,6 +900,29 @@ async fn schedules_default_timezone_and_require_calendar_on_modify() {
 }
 
 #[tokio::test]
+async fn create_schedule_rejects_malformed_compact_utc_timestamp_after_jiff_migration() {
+    let Some(server) = stateful_server().await else {
+        return;
+    };
+    let mut stream = connect(&server).await;
+    auth_admin(&mut stream).await;
+
+    let response = send_recv(
+        &mut stream,
+        b"<create_schedule><name>Invalid compact UTC date</name><icalendar>BEGIN:VEVENT&#10;DTSTART:20300230T080000&#10;END:VEVENT</icalendar><timezone>UTC</timezone></create_schedule>",
+    )
+    .await;
+
+    assert_eq!(response.status_code(), Some(400));
+    assert!(response
+        .as_str()
+        .expect("valid utf8")
+        .contains("malformed schedule iCalendar: invalid DTSTART: 20300230T080000"));
+
+    server.shutdown().await;
+}
+
+#[tokio::test]
 async fn create_schedule_rejects_non_ascii_value_date_without_panicking() {
     let Some(server) = stateful_server().await else {
         return;
