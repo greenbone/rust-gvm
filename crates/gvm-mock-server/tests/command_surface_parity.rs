@@ -194,6 +194,10 @@ fn echo_only_commands_are_intentionally_listed() {
         .collect();
     assert_eq!(
         rejected,
-        BTreeSet::from(["sync_config", "verify_active_directory_credential"])
+        BTreeSet::from([
+            "sync_config",
+            "verify_active_directory_credential",
+            "get_active_directory_objects"
+        ])
     );
 }

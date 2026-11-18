@@ -170,11 +170,11 @@ Changing client behavior:
 - `crates/gvm-client/src/error.rs`: high-level error variants and display behavior.
 - `crates/gvm-client/src/streaming.rs`: borrowed exact-byte response stream, completion, drain, copy-to-sink, and invalidation lifecycle.
 - Tests live under `crates/gvm-client/tests/`.
-- `canonical_request_surface_inventory.rs` protects the exact 1,043-row
+- `canonical_request_surface_inventory.rs` protects the exact 1,045-row
   disposition, retained rationale, removed-symbol, frozen-ticket, raw escape,
   and v0.6.0 mapping contracts.
 - `typed_facade_inventory.rs` parses every public typed helper and enforces the
-  266 canonical execute delegates plus three frozen ticket raw paths.
+  267 canonical execute delegates plus three frozen ticket raw paths.
 
 Changing transport behavior:
 
@@ -247,3 +247,8 @@ discovery, not a guessed GMP version gate. The server retains authorization and
 destination-policy decisions; bind passwords remain write-only/redacted. Built-in
 mocks reject live AD operations; explicit fixtures/scenarios model outcomes. See
 [credential evidence](active-directory-credential-gvmd-evidence.md).
+
+AD object discovery now provides canonical selectors and typed collection counts,
+objects, OS/SPNs and target/task/config references without persisting targets.
+Availability requires XML-help discovery; server DN/destination policy is preserved.
+See [discovery evidence](active-directory-discovery-gvmd-evidence.md).

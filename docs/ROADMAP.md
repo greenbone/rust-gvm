@@ -34,8 +34,8 @@ validation remains a separate follow-up.
 Release `v0.7.0` completed the SemVer-incompatible migration from the v0.6
 request surface. Issue #602 replaced temporary parallel
 options/builders/facade inputs with canonical complete request values, and
-issue #678 completed the final surface audit, now extended to 1,043 classified rows, zero
-transitional entries, and 269 typed facades. Current `main` is the
+issue #678 completed the final surface audit, now extended to 1,045 classified rows, zero
+transitional entries, and 270 typed facades. Current `main` is the
 post-`v0.7.0` Technology Preview line. See the
 [convergence audit](canonical-request-convergence-audit.md) and
 [v0.7.0 migration guide](v0.7.0-migration.md).
@@ -126,3 +126,8 @@ discovery, not a guessed GMP version gate. The server retains authorization and
 destination-policy decisions; bind passwords remain write-only/redacted. Built-in
 mocks reject live AD operations; explicit fixtures/scenarios model outcomes. See
 [credential evidence](active-directory-credential-gvmd-evidence.md).
+
+AD object discovery now provides canonical selectors and typed collection counts,
+objects, OS/SPNs and target/task/config references without persisting targets.
+Availability requires XML-help discovery; server DN/destination policy is preserved.
+See [discovery evidence](active-directory-discovery-gvmd-evidence.md).

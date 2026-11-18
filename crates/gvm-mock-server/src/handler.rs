@@ -466,15 +466,17 @@ impl SessionHandler {
         // AD requires a real directory and server-side destination/permission policy.
         // Scripted scenarios and explicit fixtures can model outcomes, never live LDAP.
         if self.mode != ServerMode::Scenario
-            && (cmd.name == "verify_active_directory_credential"
-                || (matches!(cmd.name.as_str(), "create_credential" | "modify_credential")
-                    && (cmd.child_text("type") == Some("ad")
-                        || cmd.children.iter().any(|child| {
-                            matches!(
-                                child.name.as_str(),
-                                "bind_password" | "bind_dn" | "base_dn" | "tls_mode"
-                            )
-                        }))))
+            && (matches!(
+                cmd.name.as_str(),
+                "verify_active_directory_credential" | "get_active_directory_objects"
+            ) || (matches!(cmd.name.as_str(), "create_credential" | "modify_credential")
+                && (cmd.child_text("type") == Some("ad")
+                    || cmd.children.iter().any(|child| {
+                        matches!(
+                            child.name.as_str(),
+                            "bind_password" | "bind_dn" | "base_dn" | "tls_mode"
+                        )
+                    }))))
         {
             return error_response(
                 &cmd.name,

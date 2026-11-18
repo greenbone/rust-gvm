@@ -4228,3 +4228,83 @@ async fn built_in_mock_does_not_claim_ad_bind_or_store_secrets() {
         server.shutdown().await;
     }
 }
+
+#[tokio::test]
+async fn ad_discovery_facade_preserves_collection_and_server_policy() {
+    use gvm_gmp::commands::active_directory::GetActiveDirectoryObjectsRequest;
+    let request = || GetActiveDirectoryObjectsRequest::new(id(CREATED_ID));
+    let help = r#"<help_response status="200" status_text="OK"><schema format="XML"><command><name>get_active_directory_objects</name></command></schema></help_response>"#;
+    let collection = r#"<get_active_directory_objects_response status="200" status_text="OK"><objects truncated="1"><count><ou>0</ou><container>1</container><group>0</group><computer><total>0</total></computer></count><object type="container"><name>Computers</name><distinguished_name>CN=Computers,DC=a&amp;b</distinguished_name><parent_dn>DC=a&amp;b</parent_dn><description/></object></objects></get_active_directory_objects_response>"#;
+    let Some(server) = fixture_server(
+        MockVersion::V22_4,
+        &[("help", help), ("get_active_directory_objects", collection)],
+    )
+    .await
+    else {
+        return;
+    };
+    let mut connection = client(&server).await;
+    server.clear_history();
+    assert!(matches!(
+        connection.get_active_directory_objects(request()).await,
+        Err(GvmError::CommandDiscoveryRequired { .. })
+    ));
+    assert!(server.command_history().is_empty());
+    connection
+        .discover_commands()
+        .await
+        .expect("discover AD search");
+    let result = connection
+        .get_active_directory_objects(request())
+        .await
+        .expect("typed collection");
+    let objects = result.objects.expect("objects");
+    assert!(objects.truncated);
+    assert_eq!(objects.counts.container, 1);
+    assert_eq!(objects.counts.computer.disabled, None);
+    assert_eq!(objects.items[0].distinguished_name, "CN=Computers,DC=a&b");
+    server.shutdown().await;
+
+    for message in [
+        "Permission denied",
+        "Active Directory integration is disabled",
+        "Active Directory destination is not allowed.",
+        "Search base DN is outside credential base DN",
+    ] {
+        let denial = format!(
+            "<get_active_directory_objects_response status=\"400\" status_text=\"{message}\"/>"
+        );
+        let Some(server) = fixture_server(
+            MockVersion::V22_8,
+            &[("help", help), ("get_active_directory_objects", &denial)],
+        )
+        .await
+        else {
+            return;
+        };
+        let mut connection = client(&server).await;
+        connection
+            .discover_commands()
+            .await
+            .expect("discover AD search");
+        let error = connection
+            .get_active_directory_objects(request())
+            .await
+            .expect_err("server policy");
+        assert!(error.to_string().contains(message));
+        server.shutdown().await;
+    }
+    let Some(server) = fixture_server(MockVersion::V22_8, &[("help", r#"<help_response status="200" status_text="OK"><schema format="XML"><command><name>get_tasks</name></command></schema></help_response>"#)]).await else { return; };
+    let mut connection = client(&server).await;
+    connection
+        .discover_commands()
+        .await
+        .expect("disabled build help");
+    server.clear_history();
+    assert!(matches!(
+        connection.get_active_directory_objects(request()).await,
+        Err(GvmError::CommandNotAdvertised { .. })
+    ));
+    assert!(server.command_history().is_empty());
+    server.shutdown().await;
+}

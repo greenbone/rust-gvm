@@ -6,6 +6,8 @@
 #![allow(missing_docs)]
 #![allow(clippy::missing_errors_doc)]
 
+pub mod active_directory;
+/// Agent protocol models.
 pub mod agent;
 pub mod agent_group;
 pub mod aggregates;
@@ -220,4 +222,10 @@ pub use version::GetVersionResponse;
 pub use web_application_target::{
     CreateWebApplicationTargetResponse, DeleteWebApplicationTargetResponse,
     GetWebApplicationTargetsResponse, ModifyWebApplicationTargetResponse, WebApplicationTarget,
+};
+
+pub use active_directory::{
+    ActiveDirectoryComputerCounts, ActiveDirectoryObject, ActiveDirectoryObjectCounts,
+    ActiveDirectoryObjects, ActiveDirectoryTarget, ActiveDirectoryTask,
+    GetActiveDirectoryObjectsResponse,
 };

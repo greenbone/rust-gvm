@@ -28,3 +28,6 @@
 - #847 implementation complete: typed AD credentials/metadata, mutually exclusive verification, discovery gating, redaction, and bounded mock rejection.
 - Focused checks passed: AD protocol (4), existing credentials (9), enums (31), AD facade integration (1). Full workspace unit/integration tests passed with unix-socket-tests; initial doctest run hit /tmp noexec, then all workspace doctests passed with TMPDIR under target and workspace-local rust-lld flags.
 - Strict Clippy with unix-socket-tests passed, as did formatting/diff checks. Bare default all-target Clippy trips pre-existing cfg-disabled test-crate missing-doc warnings; enabling integration tests resolves them. All-feature Clippy blocked locally by absent native cc; CI required for native TLS/SSH dependencies.
+
+- #847 published as PR #866, commits ed18e32 and 1523673. Evidence hash corrected against immutable git show origin/main (shared gvmd checkout is older). Current source permission and destination policy rechecked.
+- #848 restored independent discovery layer, reviewed against immutable current schema/source, wired exports, discovery-only capabilities, negative built-in mock, inventories and client integration coverage. Preserves current nested counts and optional collections/references.
