@@ -8,9 +8,9 @@ use gvm_gmp::commands::agent_groups::{
     GetAgentGroupsRequest, ModifyAgentGroupRequest,
 };
 use gvm_gmp::commands::agents::{
-    DeleteAgentRequest, GetAgentInstallerInstructionRequest, GetAgentRequest,
-    GetAgentSupportBundleRequest, GetAgentsRequest, ModifyAgentControlScanConfigRequest,
-    ModifyAgentRequest, SyncAgentsRequest,
+    DeleteAgentRequest, GetAgentInstallerInstructionRequest, GetAgentInventoryTokenRequest,
+    GetAgentRequest, GetAgentSupportBundleRequest, GetAgentsRequest,
+    ModifyAgentControlScanConfigRequest, ModifyAgentRequest, SyncAgentsRequest,
 };
 use gvm_gmp::commands::integration_configs::{
     GetIntegrationConfigRequest, GetIntegrationConfigsRequest, ModifyIntegrationConfigRequest,
@@ -18,12 +18,25 @@ use gvm_gmp::commands::integration_configs::{
 use gvm_gmp::responses::{
     CloneAgentGroupResponse, CreateAgentGroupResponse, DeleteAgentGroupResponse,
     DeleteAgentResponse, GetAgentGroupsResponse, GetAgentInstallerInstructionResponse,
-    GetAgentSupportBundleResponse, GetAgentsResponse, GetIntegrationConfigsResponse,
-    ModifyAgentControlScanConfigResponse, ModifyAgentGroupResponse, ModifyAgentResponse,
-    ModifyIntegrationConfigResponse, SyncAgentsResponse,
+    GetAgentInventoryTokenResponse, GetAgentSupportBundleResponse, GetAgentsResponse,
+    GetIntegrationConfigsResponse, ModifyAgentControlScanConfigResponse, ModifyAgentGroupResponse,
+    ModifyAgentResponse, ModifyIntegrationConfigResponse, SyncAgentsResponse,
 };
 
 impl<C: GvmConnection + Send> GmpClient<C> {
+    /// Issue a confidential agent inventory token after positive help discovery.
+    /// Requires the server's `get_agents` permission.
+    ///
+    /// # Errors
+    /// Returns an error for unsupported commands, unavailable issuance, denied
+    /// access, server failures, or invalid responses.
+    pub async fn get_agent_inventory_token(
+        &mut self,
+        request: GetAgentInventoryTokenRequest,
+    ) -> Result<GetAgentInventoryTokenResponse, GvmError> {
+        self.execute(request).await
+    }
+
     // ── Agents ────────────────────────────────────────────────────────────────
 
     /// Send a `get_agents` request and return a typed response.

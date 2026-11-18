@@ -34,8 +34,8 @@ validation remains a separate follow-up.
 Release `v0.7.0` completed the SemVer-incompatible migration from the v0.6
 request surface. Issue #602 replaced temporary parallel
 options/builders/facade inputs with canonical complete request values, and
-issue #678 completed the final surface audit, now extended to 1,039 classified rows, zero
-transitional entries, and 267 typed facades. Current `main` is the
+issue #678 completed the final surface audit, now extended to 1,041 classified rows, zero
+transitional entries, and 268 typed facades. Current `main` is the
 post-`v0.7.0` Technology Preview line. See the
 [convergence audit](canonical-request-convergence-audit.md) and
 [v0.7.0 migration guide](v0.7.0-migration.md).

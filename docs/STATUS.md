@@ -44,9 +44,9 @@ The canonical-request program in issue #602 is complete. [ADR 0002](adr/0002-can
 separates fallible typed validation/encoding from raw `Request` and fixes
 execution precedence as validate → semantic support → encode → transport →
 decode. Issue #678 audits the complete exported surface: the checked
-[surface disposition ledger](canonical-request-disposition.md) contains 1,039
-classified rows with zero transitional entries, and all 267 public typed
-facades are enforced as 264 canonical `execute` delegates plus three frozen
+[surface disposition ledger](canonical-request-disposition.md) contains 1,041
+classified rows with zero transitional entries, and all 268 public typed
+facades are enforced as 265 canonical `execute` delegates plus three frozen
 ticket raw paths. The [convergence audit](canonical-request-convergence-audit.md)
 records the reproducible counts and v0.6.0 comparison. The standard target
 family remains the converted reference slice: its six complete requests own
@@ -1000,7 +1000,7 @@ its explicit raw-send compatibility path.
 | Auto version negotiation | ✅ |
 | `GmpVersioned` enum (V224–VNext) | ✅ |
 | `GvmError` with server/connection/parse/timeout/unsupported | ✅ |
-| Typed convenience methods (267 methods, all GMP domains) | ✅ |
+| Typed convenience methods (268 methods, all GMP domains) | ✅ |
 | Version parsing from XML | ✅ |
 | Bounded resource and lifecycle tests | ✅ |
 | Disconnect + error path tests | ✅ |

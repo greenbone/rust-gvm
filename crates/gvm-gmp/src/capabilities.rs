@@ -155,6 +155,7 @@ command_capabilities! {
     ("export_scan_report", Stateful, Some(GmpVersion(22, 7)), PinnedSchema, Help),
     ("get_agent_groups", Stateful, Some(GmpVersion(22, 8)), PinnedSchema),
     ("get_agent_installer_instruction", Fixture, Some(GmpVersion(22, 8)), PinnedSchema),
+    ("get_agent_inventory_token", Fixture, Some(GmpVersion(22, 8)), PublicSourceOnly, Help),
     ("get_agent_support_bundle", Fixture, Some(GmpVersion(22, 8)), PinnedSchema),
     ("get_agents", Stateful, Some(GmpVersion(22, 8)), PinnedSchema),
     ("get_aggregates", Fixture, None, PinnedSchema),
@@ -360,6 +361,9 @@ mod tests {
             .map(|capability| (capability.name, capability.gvmd_evidence))
             .collect();
 
-        assert!(exceptions.is_empty());
+        assert_eq!(
+            exceptions,
+            vec![("get_agent_inventory_token", GvmdEvidence::PublicSourceOnly)]
+        );
     }
 }
