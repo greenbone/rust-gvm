@@ -6,8 +6,8 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::{Arc, RwLock};
 
-use chrono::DateTime;
-use gvm_gmp::AliveTest;
+use gvm_gmp::{AliveTest, ScheduleTimestamp};
+use jiff::Timestamp;
 use uuid::Uuid;
 
 use crate::util::{now_iso, xml_escape, xml_escape_attr};
@@ -1949,8 +1949,10 @@ fn insertion_order(inner: &StoreInner, report: &Resource) -> u64 {
 }
 
 fn report_creation_instant(report: &Resource) -> i64 {
-    DateTime::parse_from_rfc3339(&report.creation_time)
-        .map(|timestamp| timestamp.timestamp())
+    ScheduleTimestamp::parse(&report.creation_time)
+        .ok()
+        .and_then(|timestamp| timestamp.as_str().parse::<Timestamp>().ok())
+        .map(|timestamp| timestamp.as_second())
         .unwrap_or(i64::MIN)
 }
 
@@ -4725,7 +4727,7 @@ mod tests {
     }
 
     #[test]
-    fn task_report_ordering_uses_instants_and_insertion_order() {
+    fn task_report_ordering_normalizes_offsets_truncates_fractions_and_rejects_non_rfc3339() {
         let store = ResourceStore::new();
         let mut task = Resource::new("task", "Ordered reports");
         let task_id = task.id;
@@ -4742,8 +4744,26 @@ mod tests {
         earlier_text_later_instant.creation_time = "2026-03-01T00:00:00Z".to_string();
         earlier_text_later_instant.set_attr("task_id", &task_id.to_string());
         earlier_text_later_instant.set_attr("status", TaskStatus::Done.as_str());
-        let expected_last = earlier_text_later_instant.id;
         store.seed(earlier_text_later_instant);
+
+        let mut higher_fraction = Resource::new("report", "Higher fraction");
+        higher_fraction.creation_time = "2026-03-01T00:30:00.900Z".to_string();
+        higher_fraction.set_attr("task_id", &task_id.to_string());
+        higher_fraction.set_attr("status", TaskStatus::Done.as_str());
+        store.seed(higher_fraction);
+
+        let mut lower_fraction = Resource::new("report", "Later insertion in same second");
+        lower_fraction.creation_time = "2026-03-01T00:30:00.100Z".to_string();
+        lower_fraction.set_attr("task_id", &task_id.to_string());
+        lower_fraction.set_attr("status", TaskStatus::Done.as_str());
+        let expected_last = lower_fraction.id;
+        store.seed(lower_fraction);
+
+        let mut invalid_relaxed_offset = Resource::new("report", "Invalid timestamp");
+        invalid_relaxed_offset.creation_time = "2026-03-01T23:00:00-04".to_string();
+        invalid_relaxed_offset.set_attr("task_id", &task_id.to_string());
+        invalid_relaxed_offset.set_attr("status", TaskStatus::Done.as_str());
+        store.seed(invalid_relaxed_offset);
 
         let mut first_current = Resource::new("report", "First current");
         first_current.creation_time = "2026-03-01T01:00:00Z".to_string();

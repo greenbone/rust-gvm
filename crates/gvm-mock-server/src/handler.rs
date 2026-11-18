@@ -10,11 +10,11 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use base64::Engine as _;
-use chrono::NaiveDateTime;
 use gvm_gmp::schedule::{
     parse_icalendar_with_timezone, ScheduleStartObservation, ScheduleTimestamp,
 };
 use gvm_gmp::{AliveTest, PortRangeType, TargetHost, TargetHosts, TargetPortRange};
+use jiff::civil::DateTime;
 use uuid::Uuid;
 
 use crate::command_parser::{parse_command, parse_element_text, ParsedCommand, ParsedElement};
@@ -348,9 +348,18 @@ fn authoritative_utc_schedule_start(
             {
                 return Err(format!("invalid UTC DTSTART: {value}"));
             }
-            let parsed = NaiveDateTime::parse_from_str(value, "%Y%m%dT%H%M%S")
+            let leap_second = &bytes[13..15] == b"60";
+            let mut parseable = value.as_bytes().to_vec();
+            if leap_second {
+                parseable[13..15].copy_from_slice(b"59");
+            }
+            let parsed = DateTime::strptime("%Y%m%dT%H%M%S", parseable)
                 .map_err(|_| format!("invalid UTC DTSTART: {value}"))?;
-            ScheduleTimestamp::parse(&parsed.and_utc().to_rfc3339())
+            let mut normalized = parsed.strftime("%Y-%m-%dT%H:%M:%SZ").to_string();
+            if leap_second {
+                normalized.replace_range(17..19, "60");
+            }
+            ScheduleTimestamp::parse(&normalized)
                 .map(Some)
                 .map_err(|_| format!("invalid UTC DTSTART: {value}"))
         }
