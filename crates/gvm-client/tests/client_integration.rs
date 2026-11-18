@@ -4803,6 +4803,11 @@ async fn typed_report_drilldowns_parse_stateful_mock_responses() {
         .await
         .expect("report applications should parse");
     assert_eq!(applications.items[0].name.as_deref(), Some("OpenSSH"));
+    assert_eq!(applications.items[0].id, None);
+    assert_eq!(applications.items[0].hosts_count, Some(2));
+    assert_eq!(applications.items[0].occurrences, Some(5));
+    assert_eq!(applications.items[0].severity.as_deref(), Some("9.8"));
+    assert_eq!(applications.items[0].threat.as_deref(), Some("High"));
 
     let operating_systems = client
         .get_report_operating_systems(GetReportOperatingSystemsRequest::new(created.id.clone()))

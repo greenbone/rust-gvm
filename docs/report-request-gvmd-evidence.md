@@ -281,3 +281,19 @@ Projection and synchronous-export parser coverage uses bounded fixtures because
 the mock does not synthesize every gvmd report field or report-format payload.
 The mock also does not model gvmd permissions, every filter keyword, or
 asynchronous scanner timing.
+
+## Application count projection (#855)
+
+Current gvmd `150a4cfad39d00f45ef147c35e1a5f27f415c8e9`,
+`src/gmp_report_applications.c:191–209`, emits application name, hosts_count,
+occurrences, severity, and threat (without an application ID). Typed application
+summaries retain optional IDs for compatibility and now preserve both counts
+as `Option<u32>` and threat as `Option<String>`. Missing/empty counts become
+`None`, explicit zero remains `Some(0)`, and malformed, negative, fractional, or
+overflowing counts produce `ParseError::InvalidValue`. Severity is preserved
+exactly as server text, never recalculated.
+
+The server-shaped Agent-derived fixture includes nonzero host/occurrence counts
+and highest server-calculated severity, plus absent/empty/zero cases. The bounded
+mock drill-down fixture now uses the same server shape; it does not implement
+gvmd's Agent aggregation or occurrence fallback algorithm (upstream d1a04e2).
