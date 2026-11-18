@@ -253,6 +253,12 @@ criteria = "safe-to-deploy"
 delta = "1.0.228 -> 1.0.229"
 notes = "Reviewed the complete proc-macro delta for the syn 3 migration. Changes adapt renamed/reshaped syntax nodes and replace iterator combinators with equivalent explicit loops; emitted serialization/deserialization control flow and error propagation remain equivalent. No unsafe code or ambient capabilities were added."
 
+[[audits.serde_json]]
+who = "Thoth"
+criteria = "safe-to-run"
+delta = "1.0.140 -> 1.0.154"
+notes = "Reviewed the complete source delta for safe-to-run: switches to serde_core and zmij, supports preserve_order without std, optimizes string escaping, adds an explicitly unsafe RawValue constructor, and fixes numeric and UTF-8 edge cases. Its build script only reads Cargo target metadata and emits cfgs; runtime I/O remains caller-directed, with no filesystem, network, process, or installation capability added."
+
 [[audits.sha2]]
 who = "Thoth"
 criteria = "safe-to-deploy"
@@ -366,3 +372,15 @@ who = "Thoth"
 criteria = "safe-to-deploy"
 delta = "1.28.0 -> 1.29.0"
 notes = "Reviewed the complete source delta: adds NonNilUuid constructors and version-specific helpers while retaining the existing UUID byte representation and parsing/formatting paths. The new unchecked construction is used only after constructors establish the non-nil invariant; no ambient capabilities were added and MSRV remains 1.89."
+
+[[audits.uuid]]
+who = "Thoth"
+criteria = "safe-to-deploy"
+delta = "1.29.0 -> 1.29.2"
+notes = "Reviewed the complete source delta: represents timestamps as u128 nanoseconds, fixes version-7 monotonicity, precision carry, and saturation edge cases, makes SystemTime conversion non-panicking for unnormalized inputs, and extends JS cfgs to wasm64. No unsafe blocks or ambient capabilities changed; MSRV remains 1.89."
+
+[[audits.zmij]]
+who = "Thoth"
+criteria = "safe-to-run"
+delta = "1.0.21 -> 1.0.23"
+notes = "Reviewed the complete source delta for safe-to-run: extensive float-formatting, table, and SIMD refactoring plus size-optimized table selection. The no_std runtime adds no ambient capability; the build script continues to invoke only Cargo-selected rustc --version and newly reads OPT_LEVEL, with no filesystem, network, or installation behavior. This certification does not assert safe-to-deploy for the rewritten unsafe SIMD paths."
