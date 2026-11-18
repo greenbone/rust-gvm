@@ -373,6 +373,7 @@ impl FixtureStore {
             "get_reports".to_string(),
             "<get_reports_response status=\"200\" status_text=\"OK\">\
              <report id=\"{{uuid}}\">\
+             <name>{{now}}</name>\
              <task id=\"{{uuid}}\"><name>Scan Task</name></task>\
              <result_count>42<filtered>42</filtered></result_count>\
              <creation_time>{{now}}</creation_time>\
@@ -505,6 +506,8 @@ impl FixtureStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use gvm_gmp::responses::GetReportsResponse;
+    use gvm_protocol::Response;
 
     #[test]
     fn test_fixture_get_version() {
@@ -528,6 +531,35 @@ mod tests {
         let fixture = store.get("get_tasks").expect("should have fixture");
         assert!(fixture.contains("Discovery Scan"));
         assert!(fixture.contains("task_count"));
+    }
+
+    #[test]
+    fn test_fixture_get_reports_decodes() {
+        for version in [
+            GmpVersion::V22_8,
+            GmpVersion::V22_4,
+            GmpVersion::V22_5,
+            GmpVersion::V22_6,
+            GmpVersion::V22_7,
+        ] {
+            let store = FixtureStore::new(version);
+            let fixture = store.get("get_reports").expect("should have fixture");
+            let response = Response::new(fixture.into_bytes());
+            let reports = GetReportsResponse::from_response(&response)
+                .expect("built-in report fixture should decode");
+
+            assert_eq!(reports.items.len(), 1);
+            let report = &reports.items[0];
+            assert!(!report.meta.name.is_empty());
+            assert_eq!(
+                Some(report.meta.name.as_str()),
+                report.meta.creation_time.as_deref()
+            );
+            assert_eq!(
+                report.task.as_ref().map(|task| task.name.as_str()),
+                Some("Scan Task")
+            );
+        }
     }
 
     #[test]
