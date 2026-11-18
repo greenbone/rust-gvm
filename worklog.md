@@ -19,3 +19,12 @@
 - #855 cherry-picked and reviewed: application counts/threat preserve server severity; independent malformed/absent/empty/zero fixtures and client/mock drill-down test passed. Full final-stack workspace run underway.
 - #851 full CI passed at 8668795 (run 44398663891), including all features, stable/MSRV, strict clippy, coverage, documentation and python-gvm integration. Upper PR CI dispatched explicitly because pull_request branch filters exclude stacked bases.
 - Final combined local verification: `cargo test --workspace --features gvm-client/unix-socket-tests` passed 1,585 tests including doctests (one pre-existing ignored doctest); all 121 target summaries passed. Strict clippy found one test-only missing semicolon in #854; repaired in that layer and rebased #855. Strict workspace all-targets clippy and fmt now pass. No behavior changed by the lint repair.
+# AD stack worklog
+
+- 2026-11-18: Read #847/#848 and repository guidance; source evidence from gvmd origin/main. Isolated worktree from 125e16f. GitHub skill used, identity hive-bumblebee.
+- #847 credential/verification layer in progress; #848 new-file discovery layer delegated independently. Commits and PRs remain sequential.
+- No local Rust initially; parent arranging workspace-local toolchain. No host installs.
+
+- #847 implementation complete: typed AD credentials/metadata, mutually exclusive verification, discovery gating, redaction, and bounded mock rejection.
+- Focused checks passed: AD protocol (4), existing credentials (9), enums (31), AD facade integration (1). Full workspace unit/integration tests passed with unix-socket-tests; initial doctest run hit /tmp noexec, then all workspace doctests passed with TMPDIR under target and workspace-local rust-lld flags.
+- Strict Clippy with unix-socket-tests passed, as did formatting/diff checks. Bare default all-target Clippy trips pre-existing cfg-disabled test-crate missing-doc warnings; enabling integration tests resolves them. All-feature Clippy blocked locally by absent native cc; CI required for native TLS/SSH dependencies.

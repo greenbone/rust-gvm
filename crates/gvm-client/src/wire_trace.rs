@@ -259,6 +259,7 @@ fn is_sensitive_name(name: &str) -> bool {
     matches!(
         name,
         "username"
+            | "bind_password"
             | "password"
             | "community"
             | "private"
@@ -301,6 +302,14 @@ fn local_name(name: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn redacts_ad_bind_password() {
+        let xml = b"<verify_active_directory_credential><bind_password>ad-secret</bind_password></verify_active_directory_credential>";
+        assert!(!String::from_utf8(redact_wire_bytes(xml))
+            .expect("UTF-8")
+            .contains("ad-secret"));
+    }
 
     #[test]
     fn redacts_namespaced_case_insensitive_elements_and_sensitive_attributes() {

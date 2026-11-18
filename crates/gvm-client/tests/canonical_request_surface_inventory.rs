@@ -104,7 +104,9 @@ fn collect_command_surfaces(root: &Path, surfaces: &mut BTreeSet<Surface>) {
             .unwrap_or_else(|error| panic!("failed to read {}: {error}", source.display()));
 
         for line in contents.lines() {
-            if let Some(symbol) = identifier_after(line, "pub struct ") {
+            if let Some(symbol) = identifier_after(line, "pub struct ")
+                .or_else(|| identifier_after(line, "pub enum "))
+            {
                 let kind = if symbol.ends_with("Opts") {
                     Some("options")
                 } else if symbol.ends_with("Request") {
@@ -423,15 +425,15 @@ fn assert_disposition_counts(ledger: &BTreeMap<Surface, Disposition>) {
             *counts.entry(disposition.value.as_str()).or_insert(0_usize) += 1;
             counts
         });
-    assert_eq!(ledger.len(), 1041, "disposition ledger total drifted");
+    assert_eq!(ledger.len(), 1043, "disposition ledger total drifted");
     assert_eq!(
         counts.get("transitional").copied().unwrap_or_default(),
         0,
         "the completed #658-#664 inventory must contain zero transitional rows"
     );
-    assert_eq!(counts.get("canonical-request"), Some(&423));
+    assert_eq!(counts.get("canonical-request"), Some(&424));
     assert_eq!(counts.get("removed"), Some(&475));
-    assert_eq!(counts.get("retained-construction"), Some(&131));
+    assert_eq!(counts.get("retained-construction"), Some(&132));
     assert_eq!(counts.get("frozen-ticket"), Some(&12));
 }
 

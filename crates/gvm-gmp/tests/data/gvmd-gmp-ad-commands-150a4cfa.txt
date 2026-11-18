@@ -1,0 +1,5 @@
+# Incremental AD command evidence, not a full replacement snapshot.
+# gvmd 150a4cfad39d00f45ef147c35e1a5f27f415c8e9 src/schema_formats/XML/GMP.xml.in
+# Schema SHA-256 cfb9205992e25471850c483d3960e9c0e20e0a87e6b8af1f458937671b80c60a
+# ENABLE_AD_INTEGRATION; no inferred GMP-version minimum.
+verify_active_directory_credential

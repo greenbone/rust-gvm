@@ -22,6 +22,8 @@ use crate::{CredentialStoreCredentialType, CredentialType, GmpResponse, GmpVersi
 #[non_exhaustive]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum CredentialKind {
+    /// Active Directory connector (`ad`).
+    ActiveDirectory,
     /// Client certificate (`cc`).
     ClientCertificate,
     /// Kerberos 5 (`krb5`).
@@ -78,6 +80,7 @@ impl CredentialKind {
             return Self::Malformed(value.to_string());
         }
         match value {
+            "ad" => Self::ActiveDirectory,
             "cc" => Self::ClientCertificate,
             "krb5" => Self::Kerberos5,
             "pw" => Self::PasswordOnly,
@@ -101,6 +104,7 @@ impl CredentialKind {
 impl From<CredentialType> for CredentialKind {
     fn from(value: CredentialType) -> Self {
         match value {
+            CredentialType::ActiveDirectory => Self::ActiveDirectory,
             CredentialType::ClientCertificate => Self::ClientCertificate,
             CredentialType::Kerberos5 => Self::Kerberos5,
             CredentialType::PasswordOnly => Self::PasswordOnly,
@@ -137,6 +141,9 @@ impl From<CredentialStoreCredentialType> for CredentialKind {
 #[non_exhaustive]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Credential {
+    /// Returned non-secret AD metadata, when present.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub active_directory: Option<ActiveDirectoryCredentialMetadata>,
     pub meta: EntityMeta,
     /// Typed credential kind. Missing and unsupported values are explicit.
     #[cfg_attr(feature = "serde", serde(default))]
@@ -190,6 +197,7 @@ impl Credential {
     fn from_node(node: &crate::responses::common::XmlNode) -> Result<Self, ParseError> {
         let raw_type = node.child_raw_text("type");
         Ok(Self {
+            active_directory: ActiveDirectoryCredentialMetadata::from_node(node)?,
             meta: parse_entity_meta(node)?,
             kind: CredentialKind::from_optional_gmp_str(raw_type),
             type_: node.optional_child_text("type"),
@@ -289,6 +297,56 @@ pub type ModifyCredentialStoreResponse = ActionResponse;
 
 pub type ModifyCredentialResponse = ActionResponse;
 pub type DeleteCredentialResponse = ActionResponse;
+
+/// Non-secret AD connector metadata. Bind passwords are never retained.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ActiveDirectoryCredentialMetadata {
+    pub host: Option<String>,
+    pub port: Option<u16>,
+    pub bind_dn: Option<String>,
+    pub base_dn: Option<String>,
+    /// Raw mode preserves future server values.
+    pub tls_mode: Option<String>,
+    pub ca_certificate: Option<String>,
+}
+
+impl ActiveDirectoryCredentialMetadata {
+    fn from_node(node: &crate::responses::common::XmlNode) -> Result<Option<Self>, ParseError> {
+        if ![
+            "host",
+            "port",
+            "bind_dn",
+            "base_dn",
+            "tls_mode",
+            "ca_certificate",
+        ]
+        .iter()
+        .any(|field| node.child(field).is_some())
+        {
+            return Ok(None);
+        }
+        Ok(Some(Self {
+            host: node.optional_child_text("host"),
+            port: node
+                .optional_child_text("port")
+                .map(|value| {
+                    value.parse::<u16>().map_err(|_| ParseError::InvalidValue {
+                        field: "port".into(),
+                        value,
+                    })
+                })
+                .transpose()?,
+            bind_dn: node.optional_child_text("bind_dn"),
+            base_dn: node.optional_child_text("base_dn"),
+            tls_mode: node.optional_child_text("tls_mode"),
+            ca_certificate: node.optional_child_text("ca_certificate"),
+        }))
+    }
+}
+
+/// Status-only AD connection verification response.
+pub type VerifyActiveDirectoryCredentialResponse = ActionResponse;
 
 #[cfg(test)]
 mod tests {

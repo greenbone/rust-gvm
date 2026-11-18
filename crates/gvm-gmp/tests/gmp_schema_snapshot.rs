@@ -15,6 +15,7 @@ const PINNED_COMMANDS: &str = include_str!("data/gvmd-gmp-commands-5385fcb0.txt"
 fn pinned_commands() -> BTreeSet<&'static str> {
     PINNED_COMMANDS
         .lines()
+        .chain(include_str!("data/gvmd-gmp-ad-commands-150a4cfa.txt").lines())
         .filter(|line| !line.is_empty() && !line.starts_with('#'))
         .collect()
 }
@@ -39,7 +40,7 @@ fn pinned_schema_matches_qualified_registry() {
         registry_only.is_empty(),
         "commands marked PinnedSchema but absent from pinned GMP.xml.in: {registry_only:?}"
     );
-    assert_eq!(pinned.len(), 164);
+    assert_eq!(pinned.len(), 165);
 }
 
 #[test]

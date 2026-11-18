@@ -253,6 +253,7 @@ command_capabilities! {
     ("sync_agents", Stateful, Some(GmpVersion(22, 8)), PinnedSchema),
     ("sync_config", Rejected, None, PinnedSchema),
     ("test_alert", EchoOnly, None, PinnedSchema),
+    ("verify_active_directory_credential", Rejected, None, PinnedSchema, Help),
     ("verify_credential_store", Stateful, Some(GmpVersion(22, 8)), PinnedSchema),
     ("verify_report_format", Stateful, None, PinnedSchema),
     ("verify_scanner", EchoOnly, None, PinnedSchema),

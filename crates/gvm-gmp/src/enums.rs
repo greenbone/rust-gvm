@@ -374,6 +374,8 @@ gmp_enum!(CredentialFormat {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum CredentialType {
+    /// Active Directory connector (`ad`).
+    ActiveDirectory,
     /// Client certificate (`cc`).
     ClientCertificate,
     /// Kerberos 5 (`krb5`).
@@ -399,6 +401,7 @@ impl CredentialType {
     #[must_use]
     pub const fn as_gmp_str(self) -> &'static str {
         match self {
+            Self::ActiveDirectory => "ad",
             Self::ClientCertificate => "cc",
             Self::Kerberos5 => "krb5",
             Self::PasswordOnly => "pw",
@@ -416,6 +419,7 @@ impl FromStr for CredentialType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "ad" => Ok(Self::ActiveDirectory),
             "cc" => Ok(Self::ClientCertificate),
             "krb5" => Ok(Self::Kerberos5),
             "pw" => Ok(Self::PasswordOnly),

@@ -8,6 +8,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const INTEGRATION_COVERED: &[&str] = &[
+    "verify_active_directory_credential",
     "get_version",
     "authenticate",
     "get_agents",
@@ -414,7 +415,7 @@ fn normalized_integration_sources() -> String {
 #[test]
 fn every_public_typed_helper_has_exactly_one_enforced_classification() {
     let public = public_typed_methods();
-    assert_eq!(public.len(), 268);
+    assert_eq!(public.len(), 269);
     let mut classified = BTreeSet::new();
 
     for (class, methods) in [
@@ -443,7 +444,7 @@ fn every_public_typed_helper_has_exactly_one_enforced_classification() {
 #[test]
 fn execution_paths_preserve_the_typed_facade_contract() {
     let methods = typed_methods();
-    assert_eq!(methods.len(), 268);
+    assert_eq!(methods.len(), 269);
 
     let mut execute_helpers = BTreeSet::new();
     let mut raw_helpers = BTreeSet::new();
@@ -498,7 +499,7 @@ fn execution_paths_preserve_the_typed_facade_contract() {
         }
     }
 
-    assert_eq!(execute_helpers.len(), 265);
+    assert_eq!(execute_helpers.len(), 266);
     assert_eq!(
         raw_helpers,
         FROZEN_TICKET_HELPERS.map(str::to_string).into()

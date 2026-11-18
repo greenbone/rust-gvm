@@ -192,5 +192,8 @@ fn echo_only_commands_are_intentionally_listed() {
         .filter(|entry| entry.support == CommandSupport::Rejected)
         .map(|entry| entry.name)
         .collect();
-    assert_eq!(rejected, BTreeSet::from(["sync_config"]));
+    assert_eq!(
+        rejected,
+        BTreeSet::from(["sync_config", "verify_active_directory_credential"])
+    );
 }

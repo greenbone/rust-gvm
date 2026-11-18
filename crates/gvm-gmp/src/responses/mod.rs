@@ -96,9 +96,10 @@ pub use config::{
     ModifyConfigResponse,
 };
 pub use credential::{
-    CreateCredentialResponse, Credential, CredentialKind, CredentialStore,
-    DeleteCredentialResponse, GetCredentialStoresResponse, GetCredentialsResponse,
-    ModifyCredentialResponse, ModifyCredentialStoreResponse, VerifyCredentialStoreResponse,
+    ActiveDirectoryCredentialMetadata, CreateCredentialResponse, Credential, CredentialKind,
+    CredentialStore, DeleteCredentialResponse, GetCredentialStoresResponse, GetCredentialsResponse,
+    ModifyCredentialResponse, ModifyCredentialStoreResponse,
+    VerifyActiveDirectoryCredentialResponse, VerifyCredentialStoreResponse,
 };
 pub use features::{Feature, GetFeaturesResponse};
 pub use feed::{Feed, FeedSyncState, GetFeedsResponse};

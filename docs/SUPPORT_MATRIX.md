@@ -59,15 +59,15 @@ the canonical request until the server advertises 22.8.
 
 ## Command and mock qualification
 
-The registry contains 165 wire command names:
+The registry contains 166 wire command names:
 
 | Qualification | Count | Meaning |
 |---|---:|---|
 | Stateful mock behavior | 151 | Bespoke behavior or deterministic generic CRUD |
 | Fixture mock behavior | 9 | Deterministic built-in fixture response |
 | Echo-only mock behavior | 4 | Intentionally limited to a generic success response |
-| Explicitly rejected mock behavior | 1 | Known schema name with a source-backed negative built-in response |
-| Current pinned `GMP.xml.in` | 164 | Present in the public schema snapshot |
+| Explicitly rejected mock behavior | 2 | Known schema name with a source-backed negative built-in response |
+| Current pinned `GMP.xml.in` | 165 | Baseline snapshot plus pinned AD supplement |
 | Public gvmd source only | 1 | Implemented publicly but omitted from that schema |
 | Legacy compatibility | 0 | Retained for public legacy-client compatibility |
 
@@ -135,6 +135,11 @@ when the public schema has drifted. Updating the pin requires reviewing those
 differences and their version/evidence qualifications; replacing the snapshot
 alone is insufficient.
 
+The baseline snapshot remains immutable. The incremental AD command evidence in
+`gvmd-gmp-ad-commands-150a4cfa.txt` adds verification from gvmd
+`150a4cfad39d00f45ef147c35e1a5f27f415c8e9`; it does not claim complete
+coverage of every new command in that newer schema.
+
 ## Validation boundary
 
 The support claim covers deterministic serialization/parsing tests, shared
@@ -143,3 +148,11 @@ pinned public schema audit. It does not yet include a release-by-release
 real-gvmd conformance suite. The structured audit-report fixtures are derived
 from the pinned public schema, but no live gvmd service was available for this
 snapshot; that gap should remain explicit until live validation is run.
+
+## Active Directory credentials
+
+Typed AD credentials and verification are supported with build-aware XML-help
+discovery, not a guessed GMP version gate. The server retains authorization and
+destination-policy decisions; bind passwords remain write-only/redacted. Built-in
+mocks reject live AD operations; explicit fixtures/scenarios model outcomes. See
+[credential evidence](active-directory-credential-gvmd-evidence.md).

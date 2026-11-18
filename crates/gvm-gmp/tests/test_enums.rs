@@ -334,6 +334,7 @@ canonical_inventory!(
     credential_type_wire_inventory,
     CredentialType,
     {
+        ActiveDirectory => ("ad", ActiveDirectory),
         ClientCertificate => ("cc", ClientCertificate),
         Kerberos5 => ("krb5", Kerberos5),
         PasswordOnly => ("pw", PasswordOnly),

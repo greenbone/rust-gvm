@@ -4138,3 +4138,93 @@ async fn distinct_registry_and_semantic_version_gates_fail_before_transport_send
     assert!(v227_server.command_history().is_empty());
     v227_server.shutdown().await;
 }
+
+#[tokio::test]
+async fn ad_verification_requires_discovery_and_preserves_denials() {
+    use gvm_gmp::commands::credentials::VerifyActiveDirectoryCredentialRequest;
+    let request = || VerifyActiveDirectoryCredentialRequest::Saved {
+        credential_id: id(CREATED_ID),
+    };
+    let help = r#"<help_response status="200" status_text="OK"><schema format="XML"><command><name>verify_active_directory_credential</name></command></schema></help_response>"#;
+    for (status, text) in [
+        (200, "OK"),
+        (400, "Permission denied"),
+        (400, "Destination not allowed"),
+        (400, "Command unavailable"),
+    ] {
+        let response = format!("<verify_active_directory_credential_response status=\"{status}\" status_text=\"{text}\"/>");
+        let Some(server) = fixture_server(
+            MockVersion::V22_4,
+            &[
+                ("help", help),
+                ("verify_active_directory_credential", &response),
+            ],
+        )
+        .await
+        else {
+            return;
+        };
+        let mut client = client(&server).await;
+        server.clear_history();
+        assert!(matches!(
+            client.verify_active_directory_credential(request()).await,
+            Err(GvmError::CommandDiscoveryRequired { .. })
+        ));
+        assert!(server.command_history().is_empty());
+        client.discover_commands().await.expect("discover AD");
+        let result = client.verify_active_directory_credential(request()).await;
+        if status == 200 {
+            assert_eq!(result.expect("verified").status, 200);
+        } else {
+            let error = result.expect_err("server rejection");
+            assert!(error.to_string().contains(text), "{error}");
+        }
+        server.shutdown().await;
+    }
+    let Some(server) = fixture_server(MockVersion::V22_8, &[("help", r#"<help_response status="200" status_text="OK"><schema format="XML"><command><name>get_tasks</name></command></schema></help_response>"#)]).await else { return; };
+    let mut client = client(&server).await;
+    client
+        .discover_commands()
+        .await
+        .expect("discover disabled build");
+    server.clear_history();
+    assert!(matches!(
+        client.verify_active_directory_credential(request()).await,
+        Err(GvmError::CommandNotAdvertised { .. })
+    ));
+    assert!(server.command_history().is_empty());
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn built_in_mock_does_not_claim_ad_bind_or_store_secrets() {
+    use gvm_gmp::commands::credentials::{ActiveDirectoryCredentialFields, ActiveDirectoryTlsMode};
+    for mode in [ServerMode::Echo, ServerMode::Fixture, ServerMode::Stateful] {
+        let server = MockGmpServer::builder()
+            .mode(mode)
+            .unix_socket_auto()
+            .build()
+            .await
+            .expect("server");
+        let mut client = client(&server).await;
+        let mut request = CreateCredentialRequest::new("AD");
+        request.credential_type = Some(gvm_gmp::CredentialType::ActiveDirectory);
+        request.active_directory = Some(ActiveDirectoryCredentialFields {
+            host: Some("dc.example".into()),
+            bind_dn: Some("CN=svc".into()),
+            bind_password: Some("do-not-persist".into()),
+            base_dn: Some("DC=example".into()),
+            tls_mode: Some(ActiveDirectoryTlsMode::Ldaps),
+            ..Default::default()
+        });
+        let error = client
+            .create_credential(request)
+            .await
+            .expect_err("mock is not LDAP");
+        assert!(error
+            .to_string()
+            .contains("Active Directory integration unavailable"));
+        assert!(!error.to_string().contains("do-not-persist"));
+        server.shutdown().await;
+    }
+}
