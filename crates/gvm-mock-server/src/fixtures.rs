@@ -506,7 +506,7 @@ impl FixtureStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gvm_gmp::{GmpResponse, responses::GetReportsResponse};
+    use gvm_gmp::responses::GetReportsResponse;
     use gvm_protocol::Response;
 
     #[test]
