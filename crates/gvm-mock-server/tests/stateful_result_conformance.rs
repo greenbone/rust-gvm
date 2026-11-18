@@ -236,7 +236,9 @@ async fn list_detail_context_and_id_selection_follow_result_semantics() {
     assert!(!list.contains("<task id="));
     assert!(!list.contains("</result>+"));
     assert!(list.contains("<type>future-vt&amp;kind</type>"));
-    assert!(list.contains(r#"<type_metadata>{&quot;vendor&quot;:&quot;a&amp;b&quot;}</type_metadata>"#));
+    assert!(
+        list.contains(r#"<type_metadata>{&quot;vendor&quot;:&quot;a&amp;b&quot;}</type_metadata>"#)
+    );
     assert!(list.contains("<result_count>3<filtered>2</filtered><page>2</page>"));
     assert!(list.contains("<results start=\"1\" max=\"100\"/>"));
 
