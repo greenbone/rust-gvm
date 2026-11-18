@@ -175,6 +175,12 @@ criteria = "safe-to-deploy"
 delta = "0.63.3 -> 0.65.0"
 notes = "Reviewed the complete source delta under rust-gvm's no-RSA feature set: it bounds EXT_INFO, Pageant, certificate nesting, and zero-sized packet/window inputs; authenticates the server public-key callback only after signature verification; corrects channel-window accounting, pre-auth keepalive scheduling, partial authentication, and signer-failure recovery; and adds OpenSSH agent session binding. No executable unsafe blocks or ambient capabilities were added, and the MSRV remains 1.89."
 
+[[audits.russh]]
+who = "Thoth"
+criteria = "safe-to-deploy"
+delta = "0.65.0 -> 0.65.1"
+notes = "Reviewed the complete published crate delta: fixes GHSA-736f-c93q-9fwx by rechecking agent lock and key state after awaited confirmation, and GHSA-9264-jvgf-6w2f by withholding the initial kex_done callback until server host-key acceptance. It also canonicalizes padded ECDSA scalars with strict framing checks, accepts valid minimum-length EtM packets, accounts for ignored strict-KEX guesses, propagates agent failures, preserves public-key comments, and trims unused dependency features. No executable unsafe code or new ambient filesystem, process, or network capabilities were introduced; MSRV remains 1.89."
+
 [[audits.rustix]]
 who = "Thoth"
 criteria = "safe-to-deploy"
