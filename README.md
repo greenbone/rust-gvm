@@ -2,8 +2,8 @@
 
 Rust client and protocol ecosystem for the [Greenbone Management Protocol (GMP)](https://docs.greenbone.net/API/GMP/gmp-22.5.html) and [Greenbone Vulnerability Manager (gvmd)](https://github.com/greenbone/gvmd), with type safety, async-first design, version-aware canonical requests, and a programmable mock server for testing.
 
-[![CI](https://github.com/greenbone-hive/rust-gvm/actions/workflows/ci.yml/badge.svg)](https://github.com/greenbone-hive/rust-gvm/actions/workflows/ci.yml)
-[![Security](https://github.com/greenbone-hive/rust-gvm/actions/workflows/security.yml/badge.svg)](https://github.com/greenbone-hive/rust-gvm/actions/workflows/security.yml)
+[![CI](https://github.com/greenbone/rust-gvm/actions/workflows/ci.yml/badge.svg)](https://github.com/greenbone/rust-gvm/actions/workflows/ci.yml)
+[![Security](https://github.com/greenbone/rust-gvm/actions/workflows/security.yml/badge.svg)](https://github.com/greenbone/rust-gvm/actions/workflows/security.yml)
 
 > [!WARNING]
 > **Technology Preview:** This code is provided as a Technology Preview only.
@@ -914,7 +914,7 @@ do not trigger that external workflow.
 ### Pre-built Binaries
 
 Download tagged artifacts from
-[GitHub Releases](https://github.com/greenbone-hive/rust-gvm/releases). There is
+[GitHub Releases](https://github.com/greenbone/rust-gvm/releases). There is
 no current rolling-nightly publication workflow.
 
 | Platform | Binary |
@@ -928,7 +928,7 @@ no current rolling-nightly publication workflow.
 ### GHCR Image
 
 Tagged releases also publish a multi-platform container image at
-`ghcr.io/greenbone-hive/gvm-mock-server:<v-prefixed-tag>` for Linux amd64 and
+`ghcr.io/greenbone/gvm-mock-server:<v-prefixed-tag>` for Linux amd64 and
 arm64. The workflow publishes only the immutable release tag, not `latest`.
 
 See [docs/mock-server-consumption.md](docs/mock-server-consumption.md) for downstream CI usage guidance.
@@ -942,7 +942,8 @@ Start with the documents that describe the current implementation:
 - [`ROADMAP.md`](docs/ROADMAP.md) — support direction and current follow-up work
 - [`typed-execution.md`](docs/typed-execution.md) — current typed request/response model
 - [`streaming-responses.md`](docs/streaming-responses.md) — capability-gated exact-byte response streaming
-- [`v0.11.0-migration.md`](docs/v0.11.0-migration.md) — migration from the v0.10 release surface
+- [`v0.11.1-migration.md`](docs/v0.11.1-migration.md) — migration from the v0.10 release surface
+- [`v0.11.0-migration.md`](docs/v0.11.0-migration.md) — migration for the failed v0.11.0 publication attempt
 - [`v0.10.0-migration.md`](docs/v0.10.0-migration.md) — migration from the v0.9 release surface
 - [`v0.9.0-migration.md`](docs/v0.9.0-migration.md) — migration from the v0.8 release surface
 - [`v0.8.0-migration.md`](docs/v0.8.0-migration.md) — migration from the v0.7 release surface

@@ -10,7 +10,7 @@ from scripts.wait_for_release_run import (
 )
 
 
-REPOSITORY = "greenbone-hive/rust-gvm"
+REPOSITORY = "greenbone/rust-gvm"
 WORKFLOW = "release.yml"
 TAG = "v0.7.0"
 SHA = "a" * 40

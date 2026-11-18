@@ -936,7 +936,7 @@ dependencies = [
 
 [[package]]
 name = "gvm-client"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
  "async-trait",
  "gvm-connection",
@@ -953,7 +953,7 @@ dependencies = [
 
 [[package]]
 name = "gvm-connection"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
  "async-trait",
  "getrandom 0.4.3",
@@ -979,7 +979,7 @@ dependencies = [
 
 [[package]]
 name = "gvm-gmp"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
  "base64",
  "clap",
@@ -996,7 +996,7 @@ dependencies = [
 
 [[package]]
 name = "gvm-mock-server"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
  "base64",
  "clap",
@@ -1023,7 +1023,7 @@ dependencies = [
 
 [[package]]
 name = "gvm-protocol"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
  "pretty_assertions",
  "proptest",
