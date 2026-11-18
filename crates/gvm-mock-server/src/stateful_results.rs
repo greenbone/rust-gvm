@@ -591,6 +591,11 @@ fn render_basic_fields(xml: &mut String, result: &EvaluatedResult) {
             xml_escape(result.resource.attr("nvt_name").unwrap_or_default()),
             xml_escape(result.resource.attr("nvt_family").unwrap_or_default())
         ));
+        for (attr, element) in [("nvt_type", "type"), ("type_metadata", "type_metadata")] {
+            if let Some(value) = result.resource.attr(attr) {
+                xml.push_str(&format!("<{element}>{}</{element}>", xml_escape(value)));
+            }
+        }
         if let Some(cvss) = result.resource.attr("cvss_base") {
             xml.push_str(&format!("<cvss_base>{}</cvss_base>", xml_escape(cvss)));
         }
