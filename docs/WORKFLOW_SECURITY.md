@@ -113,7 +113,7 @@ does not assign an unsupported SLSA level. There is no scheduled nightly build.
 
 ### Verifying Attestations
 ```bash
-gh attestation verify gvm-mock-server-linux-amd64.tar.gz --owner greenbone-hive
+gh attestation verify gvm-mock-server-linux-amd64.tar.gz --owner greenbone
 ```
 
 ## Permissions

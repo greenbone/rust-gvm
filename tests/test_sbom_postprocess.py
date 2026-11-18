@@ -23,7 +23,10 @@ FIXTURE = ROOT / "tests" / "fixtures" / "sbom" / "minimal.cdx.json"
 
 
 class SbomPostprocessTests(unittest.TestCase):
-    def test_workspace_supplier_and_spec_version_fallbacks(self) -> None:
+    def test_release_supplier_matches_current_github_repository_owner(self) -> None:
+        self.assertEqual(load_workspace_supplier(ROOT / "Cargo.toml"), "greenbone")
+
+    def test_workspace_supplier_defaults_to_current_repository_owner(self) -> None:
         temp_dir = Path(tempfile.mkdtemp(prefix="sbom-workspace-"))
         self.addCleanup(shutil.rmtree, temp_dir)
         cargo_toml = temp_dir / "Cargo.toml"
@@ -31,8 +34,8 @@ class SbomPostprocessTests(unittest.TestCase):
             '[workspace]\n[workspace.package]\nrepository = "https://example.com/repo"\n'
         )
 
-        self.assertEqual(load_workspace_supplier(temp_dir / "missing.toml"), "greenbone-hive")
-        self.assertEqual(load_workspace_supplier(cargo_toml), "greenbone-hive")
+        self.assertEqual(load_workspace_supplier(temp_dir / "missing.toml"), "greenbone")
+        self.assertEqual(load_workspace_supplier(cargo_toml), "greenbone")
         self.assertEqual(normalize_spec_version(None), "1.5")
         self.assertEqual(normalize_spec_version("1.6"), "1.6")
 
@@ -121,7 +124,7 @@ class SbomPostprocessTests(unittest.TestCase):
         self.assertEqual(nested["licenses"], [{"expression": "AGPL-3.0-or-later"}])
         self.assertEqual(
             nested["externalReferences"],
-            [{"type": "vcs", "url": "https://github.com/greenbone-hive/rust-gvm"}],
+            [{"type": "vcs", "url": "https://github.com/greenbone/rust-gvm"}],
         )
         self.assertNotIn("compositions", transformed)
 

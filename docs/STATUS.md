@@ -699,7 +699,7 @@ the template count is not the number of GMP commands supported by other modes.
 | `--tls-client-ca <path>` | ✅ (`tls` feature) |
 | `--tls-cert-out <path>` | ✅ (`tls` feature) |
 | Cross-platform binaries | ✅ (5 targets in CI) |
-| GHCR release image | ✅ `ghcr.io/greenbone-hive/gvm-mock-server:<v-prefixed-tag>`; release image supports TCP/Unix, not feature-gated TLS/SSH listeners |
+| GHCR release image | ✅ `ghcr.io/greenbone/gvm-mock-server:<v-prefixed-tag>`; release image supports TCP/Unix, not feature-gated TLS/SSH listeners |
 
 ---
 
@@ -1038,7 +1038,7 @@ JSON document is post-processed via `scripts/sbom_postprocess.py` to add:
 
 - CC0-1.0 data license in document metadata
 - Build lifecycle phase (`build`)
-- Supplier hints: workspace crates → `greenbone-hive`, crates.io deps → `crates.io`
+- Supplier hints: workspace crates → `greenbone`, crates.io deps → `crates.io`
 
 Quality gate: **sbomqs ≥ 8.3** enforced in CI and release verification.
 
