@@ -40,3 +40,23 @@ from repository-local mock evidence:
 The mock is not claimed as real-gvmd interoperability proof. The existing
 post-merge Community E2E dispatch remains the runtime check against a deployed
 gvmd; this source evidence is reviewable before that main-branch-only gate runs.
+
+## Target provenance (#849)
+
+Current gvmd [150a4cfad39d00f45ef147c35e1a5f27f415c8e9](https://github.com/greenbone/gvmd/blob/150a4cfad39d00f45ef147c35e1a5f27f415c8e9/src/manage_sql_targets.c#L799)
+accepts `source` values `manual` and `active_directory`. Creation without the
+field defaults to `manual`; modification without it preserves the stored source.
+An explicit empty value is invalid, not a clear operation. Copy preserves source
+([copy_resource columns](https://github.com/greenbone/gvmd/blob/150a4cfad39d00f45ef147c35e1a5f27f415c8e9/src/manage_sql_targets.c#L396)).
+
+Canonical create/modify requests expose an optional validated string. Existing
+constructors omit it, preserving legacy XML; no version-number gate is invented
+for this additive field. Callers explicitly using it must select a supporting
+server. Typed target responses preserve optional source strings, including
+unknown future values; older responses and older serialized targets remain
+absent rather than fabricating manual provenance. Existing filter strings pass
+`source=active_directory` through unchanged.
+
+The stateful mock implements defaults, atomic validation, modification, copying,
+and source filtering. Tests independently exercise request XML and actual typed
+response decoding; they are not live-server qualification.

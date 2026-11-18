@@ -17,6 +17,9 @@ use crate::{GmpResponse, GmpVersion, ServicePort};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Target {
     pub meta: EntityMeta,
+    /// Server-supplied provenance; unknown future values are preserved.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub source: Option<String>,
     pub hosts: Vec<String>,
     pub exclude_hosts: Vec<String>,
     pub alive_tests: Option<String>,
@@ -82,6 +85,7 @@ impl Target {
 
         Ok(Self {
             meta: parse_entity_meta(node)?,
+            source: node.optional_child_text("source"),
             hosts: node
                 .optional_child_text("hosts")
                 .map(|value| parse_csv_list(&value))

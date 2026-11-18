@@ -71,6 +71,7 @@ fn create_target_request_has_complete_exact_wire() {
     let request = CreateTargetRequest {
         name: "production".into(),
         comment: Some("primary & external".into()),
+        source: None,
         hosts: hosts(&["192.0.2.1", "192.0.2.2"], &["192.0.2.3"]),
         alive_test: Some(AliveTest::IcmpAndArpPing),
         ports: TargetPortSelection::PortList(id("port-list-1")),
@@ -251,4 +252,74 @@ fn target_requests_remain_statically_associated_with_responses() {
         id("target-1"),
         false,
     ));
+}
+
+#[test]
+fn target_source_preserves_request_omission_and_validates_explicit_values() {
+    let mut create =
+        CreateTargetRequest::new("AD target", hosts(&["192.0.2.1"], &[]), direct_ports());
+    assert!(!request_xml(&create).contains("<source>"));
+    let mut modify = ModifyTargetRequest::new(id("target-1"));
+    assert_eq!(
+        request_xml(&modify),
+        "<modify_target target_id=\"target-1\"/>"
+    );
+    for source in ["manual", "active_directory"] {
+        create.source = Some(source.into());
+        modify.source = Some(source.into());
+        assert_eq!(request_xml(&create), format!("<create_target><name>AD target</name><source>{source}</source><hosts>192.0.2.1</hosts><exclude_hosts></exclude_hosts><port_range>T:1-65535</port_range></create_target>"));
+        assert_eq!(
+            request_xml(&modify),
+            format!(
+                "<modify_target target_id=\"target-1\"><source>{source}</source></modify_target>"
+            )
+        );
+    }
+    for invalid in ["", "unknown", " manual", "active_directory "] {
+        create.source = Some(invalid.into());
+        modify.source = Some(invalid.into());
+        assert!(create.encode(GmpVersion(22, 8)).is_err());
+        assert!(modify.encode(GmpVersion(22, 8)).is_err());
+    }
+    assert_eq!(
+        request_xml(&GetTargetsRequest {
+            filter_string: Some("source=active_directory".into()),
+            ..Default::default()
+        }),
+        "<get_targets filter=\"source=active_directory\"/>"
+    );
+    // Copy is unchanged: gvmd retains the original source, rather than defaulting it.
+    assert_eq!(
+        request_xml(&CloneTargetRequest::new(id("target-1"))),
+        "<create_target><copy>target-1</copy></create_target>"
+    );
+}
+
+#[test]
+fn target_source_decoding_preserves_unknown_values_and_missing_old_server_field() {
+    for (element, expected) in [
+        ("", None),
+        ("<source>manual</source>", Some("manual")),
+        (
+            "<source>active_directory</source>",
+            Some("active_directory"),
+        ),
+        (
+            "<source>future_discovery</source>",
+            Some("future_discovery"),
+        ),
+    ] {
+        let response = gvm_protocol::Response::new(format!("<get_targets_response status=\"200\" status_text=\"OK\"><target id=\"target-1\"><name>target</name>{element}</target></get_targets_response>").into_bytes());
+        let parsed = gvm_gmp::responses::GetTargetsResponse::decode(&response, GmpVersion(22, 8))
+            .expect("target response");
+        assert_eq!(parsed.items[0].source.as_deref(), expected);
+        #[cfg(feature = "serde")]
+        {
+            let mut value = serde_json::to_value(&parsed.items[0]).expect("serialize target");
+            value.as_object_mut().unwrap().remove("source");
+            let old: gvm_gmp::responses::Target =
+                serde_json::from_value(value).expect("older serialized target");
+            assert_eq!(old.source, None);
+        }
+    }
 }

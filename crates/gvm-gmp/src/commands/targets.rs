@@ -80,6 +80,8 @@ pub struct CreateTargetRequest {
     pub name: String,
     /// Optional comment text included in the request.
     pub comment: Option<String>,
+    /// Target provenance (`manual` or `active_directory`); omitted defaults to manual.
+    pub source: Option<String>,
     /// Validated included and excluded target hosts.
     pub hosts: TargetHosts,
     /// Optional alive-test strategy.
@@ -115,6 +117,7 @@ impl CreateTargetRequest {
         Self {
             name: name.into(),
             comment: None,
+            source: None,
             hosts,
             alive_test: None,
             ports,
@@ -160,6 +163,8 @@ pub struct ModifyTargetRequest {
     pub name: Option<String>,
     /// Comment update: `None` preserves it, while `Some("")` clears it.
     pub comment: Option<String>,
+    /// Target provenance (`manual` or `active_directory`); omission preserves it.
+    pub source: Option<String>,
     /// Atomic replacement of included and excluded hosts, or `None` to omit.
     pub hosts: Option<TargetHosts>,
     /// Optional alive-test strategy.
@@ -202,6 +207,7 @@ impl ModifyTargetRequest {
             target_id,
             name: None,
             comment: None,
+            source: None,
             hosts: None,
             alive_test: None,
             port_list_id: ScalarUpdate::Omitted,
@@ -308,7 +314,18 @@ fn clone_target_command(target_id: &EntityId) -> XmlCommand {
     XmlCommand::new("create_target").child_with_text("copy", target_id.as_str())
 }
 
+fn validate_target_source(source: Option<&str>) -> Result<(), GmpRequestError> {
+    match source {
+        None | Some("manual" | "active_directory") => Ok(()),
+        Some(_) => Err(GmpRequestError::invalid_field(
+            "source",
+            "must be manual or active_directory",
+        )),
+    }
+}
+
 fn validate_create_target(request: &CreateTargetRequest) -> Result<(), GmpRequestError> {
+    validate_target_source(request.source.as_deref())?;
     if request.ssh_credential_port.is_some() && request.ssh_credential_id.is_none() {
         return Err(GmpRequestError::invalid_combination(
             &["ssh_credential_port", "ssh_credential_id"],
@@ -344,6 +361,7 @@ fn create_target_command(request: &CreateTargetRequest) -> XmlCommand {
     let mut cmd = XmlCommand::new("create_target");
     cmd.add_element_with_text("name", &request.name);
     add_text_element(&mut cmd, "comment", request.comment.as_deref());
+    add_text_element(&mut cmd, "source", request.source.as_deref());
     cmd.add_element_with_text("hosts", &join_hosts(request.hosts.included()));
     cmd.add_element_with_text("exclude_hosts", &join_hosts(request.hosts.excluded()));
     if let Some(alive_test) = request.alive_test {
@@ -389,6 +407,7 @@ fn get_target_command(target_id: &EntityId) -> XmlCommand {
 }
 
 fn validate_modify_target(request: &ModifyTargetRequest) -> Result<(), GmpRequestError> {
+    validate_target_source(request.source.as_deref())?;
     if matches!(request.port_list_id, ScalarUpdate::Clear) {
         return Err(GmpRequestError::invalid_field(
             "port_list_id",
@@ -447,6 +466,7 @@ fn modify_target_command(request: &ModifyTargetRequest) -> XmlCommand {
     if let Some(comment) = request.comment.as_deref() {
         cmd.add_element_with_text("comment", comment);
     }
+    add_text_element(&mut cmd, "source", request.source.as_deref());
     if let Some(hosts) = &request.hosts {
         cmd.add_element_with_text("hosts", &join_hosts(hosts.included()));
         cmd.add_element_with_text("exclude_hosts", &join_hosts(hosts.excluded()));
