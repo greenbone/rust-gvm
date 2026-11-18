@@ -1314,3 +1314,76 @@ async fn stateful_import_report_persists_task_and_in_assets() {
 
     server.shutdown().await;
 }
+
+#[tokio::test]
+async fn sensor_scanner_ports_normalize_and_modify_uses_existing_type() {
+    let Some((server, store)) = stateful_server_with_store().await else {
+        return;
+    };
+    let mut stream = connect(&server).await;
+    auth_admin(&mut stream).await;
+    for scanner_type in ["5", "8", "9"] {
+        for port in [0, 9390] {
+            let response = send_recv(&mut stream, format!("<create_scanner><name>sensor</name><host>sensor.example</host><port>{port}</port><type>{scanner_type}</type></create_scanner>").as_bytes()).await;
+            assert_eq!(response.status_code(), Some(201));
+            let id = extract_id(&response);
+            let uuid = uuid::Uuid::parse_str(&id).expect("scanner UUID");
+            assert_eq!(
+                store
+                    .get_typed(&uuid, "scanner")
+                    .expect("scanner")
+                    .attr("port"),
+                Some("0")
+            );
+            let response = send_recv(
+                &mut stream,
+                format!("<modify_scanner scanner_id=\"{id}\"><port>0</port></modify_scanner>")
+                    .as_bytes(),
+            )
+            .await;
+            assert_eq!(response.status_code(), Some(200));
+            let response = send_recv(
+                &mut stream,
+                format!(
+                    "<modify_scanner scanner_id=\"{id}\"><name>renamed</name></modify_scanner>"
+                )
+                .as_bytes(),
+            )
+            .await;
+            assert_eq!(response.status_code(), Some(200));
+            assert_eq!(
+                store
+                    .get_typed(&uuid, "scanner")
+                    .expect("scanner")
+                    .attr("port"),
+                Some("0")
+            );
+            // A type change to an ordinary scanner cannot retain its zero port.
+            let response = send_recv(
+                &mut stream,
+                format!("<modify_scanner scanner_id=\"{id}\"><type>2</type></modify_scanner>")
+                    .as_bytes(),
+            )
+            .await;
+            assert_eq!(response.status_code(), Some(400));
+            assert_eq!(
+                store
+                    .get_typed(&uuid, "scanner")
+                    .expect("scanner")
+                    .attr("type"),
+                Some(scanner_type)
+            );
+        }
+    }
+    let response = send_recv(&mut stream, b"<create_scanner><name>normal</name><host>scanner.example</host><port>0</port><type>2</type></create_scanner>").await;
+    assert_eq!(response.status_code(), Some(400));
+    let response = send_recv(&mut stream, b"<create_scanner><name>normal</name><host>scanner.example</host><port>9390</port><type>2</type></create_scanner>").await;
+    let id = extract_id(&response);
+    let response = send_recv(
+        &mut stream,
+        format!("<modify_scanner scanner_id=\"{id}\"><port>0</port></modify_scanner>").as_bytes(),
+    )
+    .await;
+    assert_eq!(response.status_code(), Some(400));
+    server.shutdown().await;
+}

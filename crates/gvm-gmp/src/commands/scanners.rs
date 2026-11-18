@@ -85,7 +85,7 @@ pub struct CreateScannerRequest {
     pub comment: Option<String>,
     /// Scanner hostname or IP address.
     pub host: String,
-    /// Scanner service port.
+    /// Scanner service port; sensor scanners accept zero (gvmd normalizes their port).
     pub port: u16,
     /// Scanner protocol type.
     pub scanner_type: ScannerType,
@@ -126,7 +126,7 @@ impl GmpRequestCodec for CreateScannerRequest {
     fn validate(&self) -> Result<(), GmpRequestError> {
         require_non_empty(&self.name, "name")?;
         validate_host(&self.host, "host")?;
-        validate_port(self.port, "port")?;
+        validate_scanner_port(self.port, Some(self.scanner_type))?;
         validate_create_relay(self.relay_host.as_deref(), self.relay_port)
     }
 
@@ -200,7 +200,8 @@ pub struct ModifyScannerRequest {
     pub comment: Option<String>,
     /// Optional replacement hostname or IP address.
     pub host: Option<String>,
-    /// Optional replacement service port.
+    /// Optional replacement service port. Zero is accepted for sensors; when the
+    /// type is omitted, gvmd validates against the existing scanner type.
     pub port: Option<u16>,
     /// Optional replacement scanner type.
     pub scanner_type: Option<ScannerType>,
@@ -240,7 +241,7 @@ impl GmpRequestCodec for ModifyScannerRequest {
             validate_host(host, "host")?;
         }
         if let Some(port) = self.port {
-            validate_port(port, "port")?;
+            validate_scanner_port(port, self.scanner_type)?;
         }
         validate_modify_relay(self.relay_host.as_deref(), self.relay_port)
     }
@@ -350,6 +351,18 @@ fn validate_host(host: &str, field: &'static str) -> Result<(), GmpRequestError>
         ))
     } else {
         Ok(())
+    }
+}
+
+// With no replacement type, only the server knows whether an existing scanner
+// is a sensor. Keep relay validation separate: network relays cannot use zero.
+fn validate_scanner_port(
+    port: u16,
+    scanner_type: Option<ScannerType>,
+) -> Result<(), GmpRequestError> {
+    match scanner_type {
+        None | Some(ScannerType::GreenBoneSensorType) => Ok(()),
+        Some(_) => validate_port(port, "port"),
     }
 }
 
@@ -607,6 +620,76 @@ mod tests {
         let mut modify = ModifyScannerRequest::new(id("scanner-1"));
         modify.relay_host = Some(String::new());
         modify.relay_port = Some(9391);
+        assert!(matches!(
+            modify.validate(),
+            Err(GmpRequestError::InvalidField {
+                field: "relay_port",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn sensor_zero_port_and_server_resolved_modify_are_encoded() {
+        let request = CreateScannerRequest::new(
+            "sensor",
+            "sensor.example",
+            0,
+            ScannerType::GreenBoneSensorType,
+        );
+        assert_eq!(request_xml(&request), "<create_scanner><name>sensor</name><host>sensor.example</host><port>0</port><type>5</type></create_scanner>");
+        let mut modify = ModifyScannerRequest::new(id("sensor-1"));
+        assert_eq!(
+            request_xml(&modify),
+            "<modify_scanner scanner_id=\"sensor-1\"/>"
+        );
+        modify.port = Some(0);
+        assert_eq!(
+            request_xml(&modify),
+            "<modify_scanner scanner_id=\"sensor-1\"><port>0</port></modify_scanner>"
+        );
+        modify.scanner_type = Some(ScannerType::GreenBoneSensorType);
+        assert_eq!(
+            request_xml(&modify),
+            "<modify_scanner scanner_id=\"sensor-1\"><port>0</port><type>5</type></modify_scanner>"
+        );
+        for kind in [
+            ScannerType::OpenVasScanner,
+            ScannerType::CveScannerType,
+            ScannerType::OpenVasdScannerType,
+        ] {
+            modify.scanner_type = Some(kind);
+            assert!(modify.validate().is_err());
+            assert!(
+                CreateScannerRequest::new("ordinary", "scanner.example", 0, kind)
+                    .validate()
+                    .is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn sensor_ports_do_not_relax_network_relay_validation() {
+        let mut create = CreateScannerRequest::new(
+            "sensor",
+            "sensor.example",
+            0,
+            ScannerType::GreenBoneSensorType,
+        );
+        create.relay_host = Some("relay.example".into());
+        create.relay_port = Some(0);
+        assert!(matches!(
+            create.validate(),
+            Err(GmpRequestError::InvalidField {
+                field: "relay_port",
+                ..
+            })
+        ));
+        create.relay_port = Some(443);
+        assert!(create.validate().is_ok());
+        let mut modify = ModifyScannerRequest::new(id("sensor-1"));
+        modify.port = Some(0);
+        modify.relay_port = Some(0);
         assert!(matches!(
             modify.validate(),
             Err(GmpRequestError::InvalidField {

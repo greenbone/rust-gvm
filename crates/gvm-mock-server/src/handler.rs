@@ -1292,7 +1292,10 @@ impl SessionHandler {
             }
             let Some(_) = parse_element_text(raw_xml, "port")
                 .and_then(|value| value.parse::<u16>().ok())
-                .filter(|port| *port != 0)
+                .filter(|port| {
+                    *port != 0
+                        || is_sensor_scanner_type(parse_element_text(raw_xml, "type").as_deref())
+                })
             else {
                 return error_response(&cmd.name, 400, "Invalid scanner port");
             };
@@ -1663,6 +1666,9 @@ impl SessionHandler {
                 if let Some(value) = element_text_including_empty(cmd, raw_xml, field) {
                     resource.set_attr(field, &value);
                 }
+            }
+            if is_sensor_scanner_type(resource.attr("type")) {
+                resource.set_attr("port", "0");
             }
             if let Some(credential_id) = cmd.child_attr("credential", "id") {
                 resource.set_attr("credential_id", credential_id);
@@ -2819,6 +2825,19 @@ impl SessionHandler {
                 }
             }
         }
+        if resource_type == "scanner" {
+            if let Some(existing) = store.get_typed(&uuid, "scanner") {
+                let effective_type = new_type.as_deref().or_else(|| existing.attr("type"));
+                if !is_sensor_scanner_type(effective_type)
+                    && new_port
+                        .as_deref()
+                        .or_else(|| existing.attr("port"))
+                        .is_none_or(|port| !port.parse::<u16>().is_ok_and(|port| port != 0))
+                {
+                    return error_response(&cmd.name, 400, "Invalid scanner port");
+                }
+            }
+        }
         let update_resource = |r: &mut Resource| {
             if matches!(resource_type, "note" | "override") {
                 r.name.clone_from(
@@ -2939,6 +2958,9 @@ impl SessionHandler {
                 }
                 if let Some(ref scanner_type) = new_type {
                     r.set_attr("type", scanner_type);
+                }
+                if is_sensor_scanner_type(r.attr("type")) {
+                    r.set_attr("port", "0");
                 }
                 if let Some(ref ca_pub) = new_ca_pub {
                     if ca_pub.is_empty() {
@@ -6364,4 +6386,9 @@ mod tests {
         assert!(xml.contains("<target/>"));
         assert!(xml.contains("<progress>0</progress>"));
     }
+}
+
+// gvmd manage.h: OSP, OpenVASD and Agent Controller sensors.
+fn is_sensor_scanner_type(scanner_type: Option<&str>) -> bool {
+    matches!(scanner_type, Some("5" | "8" | "9"))
 }

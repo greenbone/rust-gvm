@@ -61,3 +61,22 @@ The stateful mock lifecycle covers exact XML, list/detail parsing, relay
 persistence, partial-update preservation, clone overrides, explicit clearing,
 verification, and deletion. These deterministic tests validate the canonical
 contract but are not a claim of live-gvmd interoperability.
+
+## Sensor port correction (#850)
+
+Current gvmd [150a4cfad39d00f45ef147c35e1a5f27f415c8e9,
+manage_sql.c](https://github.com/greenbone/gvmd/blob/150a4cfad39d00f45ef147c35e1a5f27f415c8e9/src/manage_sql.c#L21995)
+normalizes OSP (5), OpenVASD (8), and Agent Controller (9) sensor ports to zero.
+This supersedes the older blanket nonzero-primary-port assumption above.
+The existing typed OSP sensor variant now accepts zero; nonzero sensor ports
+remain accepted because the server normalizes them. Other typed scanner kinds
+still require a nonzero port. This change does not add new scanner-type variants.
+
+For modify requests with an omitted type, zero must reach gvmd: only the server
+knows the existing scanner type. Explicit ordinary types still reject zero
+locally. Network relay ports retain their independent nonzero validation.
+The stateful mock resolves the stored type, normalizes all three sensor wire
+codes, and rejects an ordinary scanner's zero port before mutating state.
+Tests cover exact typed XML, modify omission, relay validation and stateful
+normalization/atomic rejection. These are deterministic tests, not live gvmd
+qualification.
