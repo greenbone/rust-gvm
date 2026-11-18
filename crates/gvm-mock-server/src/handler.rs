@@ -2828,12 +2828,17 @@ impl SessionHandler {
         if resource_type == "scanner" {
             if let Some(existing) = store.get_typed(&uuid, "scanner") {
                 let effective_type = new_type.as_deref().or_else(|| existing.attr("type"));
-                if !is_sensor_scanner_type(effective_type)
-                    && new_port
+                let sensor = is_sensor_scanner_type(effective_type);
+                // gvmd normalizes only a supplied port; omission preserves the stored one.
+                let port = if sensor && new_port.is_some() {
+                    Some(0)
+                } else {
+                    new_port
                         .as_deref()
                         .or_else(|| existing.attr("port"))
-                        .is_none_or(|port| !port.parse::<u16>().is_ok_and(|port| port != 0))
-                {
+                        .and_then(|port| port.parse::<u16>().ok())
+                };
+                if port.is_none_or(|port| if sensor { port != 0 } else { port == 0 }) {
                     return error_response(&cmd.name, 400, "Invalid scanner port");
                 }
             }
@@ -2959,7 +2964,7 @@ impl SessionHandler {
                 if let Some(ref scanner_type) = new_type {
                     r.set_attr("type", scanner_type);
                 }
-                if is_sensor_scanner_type(r.attr("type")) {
+                if new_port.is_some() && is_sensor_scanner_type(r.attr("type")) {
                     r.set_attr("port", "0");
                 }
                 if let Some(ref ca_pub) = new_ca_pub {

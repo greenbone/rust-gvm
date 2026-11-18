@@ -80,3 +80,9 @@ codes, and rejects an ordinary scanner's zero port before mutating state.
 Tests cover exact typed XML, modify omission, relay validation and stateful
 normalization/atomic rejection. These are deterministic tests, not live gvmd
 qualification.
+
+When changing scanner type with an omitted port, gvmd preserves the stored port
+before validating it against the new type. Thus an ordinary scanner with port
+9390 cannot become a sensor without an explicit port update; it is rejected
+atomically. Supplying a port lets gvmd normalize it for the new sensor type.
+The mock and regression tests preserve this distinction in both directions.
