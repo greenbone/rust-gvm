@@ -1,0 +1,6 @@
+<get_agents_response status="200" status_text="OK">
+  <agent id="agent-populated"><name>Debian agent</name><hostname>debian-agent</hostname><agent_id>42</agent_id><authorized>1</authorized><connection_status>active</connection_status><agent_version>1.2.3</agent_version><operating_system>Debian GNU/Linux 12</operating_system><architecture>x86_64</architecture><os_cpe>cpe:/o:debian:debian_linux:12</os_cpe><os_status>supported</os_status></agent>
+  <agent id="agent-absent"><name>Legacy agent</name></agent>
+  <agent id="agent-empty"><name>Unknown OS</name><operating_system/><architecture></architecture><os_cpe> </os_cpe><os_status/></agent>
+  <agent_count>3<filtered>3</filtered><page>3</page></agent_count>
+</get_agents_response>
