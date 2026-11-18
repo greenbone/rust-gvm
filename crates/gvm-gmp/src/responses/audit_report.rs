@@ -7,7 +7,8 @@ use gvm_protocol::Response;
 
 use crate::responses::common::{
     count_info, optional_u32, parse_bool, parse_document, parse_entity_id, parse_entity_meta,
-    parse_i32, parse_u32, status_from_response, CountInfo, EntityMeta, ParseError, XmlNode,
+    parse_entity_ref, parse_i32, parse_u32, status_from_response, CountInfo, EntityMeta,
+    NamedEntity, ParseError, XmlNode,
 };
 use crate::{EntityId, GmpResponse, GmpVersion};
 
@@ -95,7 +96,7 @@ pub struct StructuredReportTarget {
     pub target_type: Option<String>,
 }
 
-/// Task reference nested in a structured audit report.
+/// Task reference nested in a structured scan or audit report.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -104,6 +105,9 @@ pub struct StructuredReportTask {
     pub name: String,
     pub comment: Option<String>,
     pub target: Option<StructuredReportTarget>,
+    /// Scan configuration emitted in this report; absent for config-less/older reports.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub scan_config: Option<NamedEntity>,
     pub progress: Option<i32>,
 }
 
@@ -377,6 +381,7 @@ pub(crate) fn parse_task(node: &XmlNode) -> Result<StructuredReportTask, ParseEr
         name: node.optional_child_text("name").unwrap_or_default(),
         comment: node.child_text("comment"),
         target: node.child("target").map(parse_target).transpose()?,
+        scan_config: parse_entity_ref(node, "scan_config")?,
         progress: node
             .optional_child_text("progress")
             .map(|value| parse_i32(&value, "task.progress"))
