@@ -2,7 +2,7 @@
 
 `rust-gvm` publishes a container image for tagged releases at:
 
-- `ghcr.io/greenbone-hive/gvm-mock-server:<v-prefixed-tag>`
+- `ghcr.io/greenbone/gvm-mock-server:<v-prefixed-tag>`
 
 Use an immutable tag shown by the repository's GitHub Releases page. Do not
 assume that a version present on `main` has a corresponding image until its
@@ -21,7 +21,7 @@ Run the mock server over TCP inside the container and point your tests at that s
 docker run --rm -d \
   --name gvm-mock \
   -p 127.0.0.1:9390:9390 \
-  ghcr.io/greenbone-hive/gvm-mock-server:vX.Y.Z \
+  ghcr.io/greenbone/gvm-mock-server:vX.Y.Z \
   --mode stateful \
   --version 22.7 \
   --tcp 0.0.0.0:9390
@@ -36,7 +36,7 @@ jobs:
   integration:
     runs-on: ubuntu-latest
     env:
-      MOCK_IMAGE: ghcr.io/greenbone-hive/gvm-mock-server:vX.Y.Z
+      MOCK_IMAGE: ghcr.io/greenbone/gvm-mock-server:vX.Y.Z
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -86,7 +86,7 @@ and TLS mock servers and does not read `GMP_HOST` or `GMP_PORT`.
 
 The same pattern works in GitLab CI, Buildkite, CircleCI, or local developer workflows:
 
-1. Pull `ghcr.io/greenbone-hive/gvm-mock-server:<v-prefixed-tag>`.
+1. Pull `ghcr.io/greenbone/gvm-mock-server:<v-prefixed-tag>`.
 2. Start the container with `--tcp 0.0.0.0:9390`.
 3. Wait until port `9390` accepts connections.
 4. Run your GMP integration tests against that address.

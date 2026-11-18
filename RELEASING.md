@@ -1,7 +1,7 @@
 # Releasing rust-gvm
 
 Releases are managed via the repository's
-[Orchestrated Release workflow](https://github.com/greenbone-hive/rust-gvm/actions/workflows/release-orchestrated.yml).
+[Orchestrated Release workflow](https://github.com/greenbone/rust-gvm/actions/workflows/release-orchestrated.yml).
 
 ## How It Works
 
@@ -61,7 +61,7 @@ Each release includes:
 - **Binaries**: five `gvm-mock-server` archives for Linux (amd64 GNU,
   arm64 GNU, amd64 musl) and macOS (amd64, arm64), each with a SHA-256 file
 - **Docker image**:
-  `ghcr.io/greenbone-hive/gvm-mock-server:v<version>` as a Linux amd64/arm64
+  `ghcr.io/greenbone/gvm-mock-server:v<version>` as a Linux amd64/arm64
   image index; neither `latest` nor an unprefixed version tag is published
 - **SBOM**: `rust-gvm-sbom.tar.gz` containing CycloneDX 1.5 JSON and XML for
   all five workspace crates, its SHA-256 file, and a separate
@@ -72,9 +72,9 @@ Each release includes:
 ## Verifying Artifacts
 
 ```bash
-gh attestation verify gvm-mock-server-linux-amd64.tar.gz --owner greenbone-hive
-gh attestation verify oci://ghcr.io/greenbone-hive/gvm-mock-server:vX.Y.Z \
-  --repo greenbone-hive/rust-gvm
+gh attestation verify gvm-mock-server-linux-amd64.tar.gz --owner greenbone
+gh attestation verify oci://ghcr.io/greenbone/gvm-mock-server:vX.Y.Z \
+  --repo greenbone/rust-gvm
 ```
 
 The release workflow also runs `scripts/verify_release.py published` against

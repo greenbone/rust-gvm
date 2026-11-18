@@ -15,7 +15,7 @@ from typing import Any
 
 CC0_LICENSE = {"license": {"id": "CC0-1.0"}}
 BUILD_LIFECYCLE = {"phase": "build"}
-WORKSPACE_SUPPLIER_FALLBACK = "greenbone-hive"
+WORKSPACE_SUPPLIER_FALLBACK = "greenbone"
 REGISTRY_SUPPLIER = "crates.io"
 
 

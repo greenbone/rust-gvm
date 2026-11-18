@@ -9,11 +9,11 @@ members = [
 ]
 
 [workspace.package]
-version = "0.11.0"
+version = "0.11.1"
 edition = "2021"
 rust-version = "1.89.0"
 license = "AGPL-3.0-or-later"
-repository = "https://github.com/greenbone-hive/rust-gvm"
+repository = "https://github.com/greenbone/rust-gvm"
 keywords = ["greenbone", "gvm", "gmp", "vulnerability", "security"]
 categories = ["network-programming", "api-bindings"]
 
@@ -68,11 +68,11 @@ tokio-test = "0.4"
 tokio-stream = { version = "0.1", features = ["net"] }
 
 # Workspace crates (internal)
-gvm-connection = { version = "0.11.0", path = "crates/gvm-connection" }
-gvm-protocol = { version = "0.11.0", path = "crates/gvm-protocol" }
-gvm-gmp = { version = "0.11.0", path = "crates/gvm-gmp" }
-gvm-client = { version = "0.11.0", path = "crates/gvm-client" }
-gvm-mock-server = { version = "0.11.0", path = "crates/gvm-mock-server" }
+gvm-connection = { version = "0.11.1", path = "crates/gvm-connection" }
+gvm-protocol = { version = "0.11.1", path = "crates/gvm-protocol" }
+gvm-gmp = { version = "0.11.1", path = "crates/gvm-gmp" }
+gvm-client = { version = "0.11.1", path = "crates/gvm-client" }
+gvm-mock-server = { version = "0.11.1", path = "crates/gvm-mock-server" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
