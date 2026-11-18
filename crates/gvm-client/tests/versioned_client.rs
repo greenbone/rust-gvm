@@ -597,6 +597,7 @@ async fn next_client_agent_groups_round_trip() {
     let mut create_request =
         CreateAgentGroupRequest::new("Client Agent Group", agent_ids.to_vec(), "0 */5 * * *");
     create_request.comment = Some("created through client".into());
+    create_request.max_delay_seconds = Some(30);
     let create_response = client
         .create_agent_group(create_request)
         .await
@@ -619,6 +620,7 @@ async fn next_client_agent_groups_round_trip() {
         .expect("get_agent_group should succeed");
     assert_eq!(get_response.items.len(), 1);
     assert_eq!(get_response.items[0].meta.name, "Client Agent Group");
+    assert_eq!(get_response.items[0].max_delay_seconds, Some(30));
     assert_eq!(
         get_response.items[0].scheduler_cron_time.as_deref(),
         Some("0 */5 * * *")
@@ -633,6 +635,7 @@ async fn next_client_agent_groups_round_trip() {
 
     let mut modify_request = ModifyAgentGroupRequest::new(agent_group_id.clone(), "0 */10 * * *");
     modify_request.name = Some("Updated Agent Group".into());
+    modify_request.max_delay_seconds = Some(60);
     modify_request.comment = Some("modified through client".into());
     modify_request.agent_ids =
         CollectionUpdate::replace([EntityId::new("agent-3").expect("valid id")]);
@@ -647,6 +650,7 @@ async fn next_client_agent_groups_round_trip() {
         .await
         .expect("updated get_agent_group should succeed");
     assert_eq!(updated_response.items[0].meta.name, "Updated Agent Group");
+    assert_eq!(updated_response.items[0].max_delay_seconds, Some(60));
     assert_eq!(
         updated_response.items[0].meta.comment.as_deref(),
         Some("modified through client")

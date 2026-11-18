@@ -100,8 +100,8 @@ pub use gvm_gmp::commands::help::HelpMode;
 pub use gvm_gmp::commands::usage_type::UsageType;
 pub use gvm_gmp::enums::{CredentialStoreCredentialType, FeedType};
 pub use gvm_gmp::{
-    GmpCommand, GmpRequest, GmpRequestCodec, GmpRequestError, GmpResponse, GmpServerErrorKind,
-    GmpStreamDecoder, GmpStreamingResponse,
+    AgentSchedule, GmpCommand, GmpRequest, GmpRequestCodec, GmpRequestError, GmpResponse,
+    GmpServerErrorKind, GmpStreamDecoder, GmpStreamingResponse,
 };
 pub use gvm_protocol::{StreamingXmlElement, StreamingXmlEvent};
 pub use streaming::{GmpResponseStream, GmpStreamCompletion, GmpStreamCopyError, StreamOptions};

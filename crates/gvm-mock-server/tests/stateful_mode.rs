@@ -346,7 +346,7 @@ async fn stateful_modify_agent_group_clears_non_empty_membership() {
 
     let created = send_recv(
         &mut stream,
-        b"<create_agent_group><name>Agents</name><scheduler_cron_time>0 */5 * * *</scheduler_cron_time><agents><agent id=\"agent-1\"/><agent id=\"agent-2\"/></agents></create_agent_group>",
+        b"<create_agent_group><name>Agents</name><scheduler_cron_time>0 */5 * * *</scheduler_cron_time><max_delay_seconds>30</max_delay_seconds><agents><agent id=\"agent-1\"/><agent id=\"agent-2\"/></agents></create_agent_group>",
     )
     .await;
     assert_eq!(created.status_code(), Some(201));
@@ -360,6 +360,21 @@ async fn stateful_modify_agent_group_clears_non_empty_membership() {
     let before = before.as_str().expect("valid UTF-8");
     assert!(before.contains("<agent id=\"agent-1\"><name></name></agent>"));
     assert!(before.contains("<agent id=\"agent-2\"><name></name></agent>"));
+
+    assert!(before.contains("<max_delay_seconds>30</max_delay_seconds>"));
+    let rejected = send_recv(
+        &mut stream,
+        format!("<modify_agent_group agent_group_id=\"{group_id}\"><name>Must not persist</name><max_delay_seconds>2147483648</max_delay_seconds></modify_agent_group>").as_bytes(),
+    ).await;
+    assert_eq!(rejected.status_code(), Some(400));
+    let unchanged = send_recv(
+        &mut stream,
+        format!("<get_agent_groups agent_group_id=\"{group_id}\"/>").as_bytes(),
+    )
+    .await;
+    let unchanged = unchanged.as_str().expect("UTF-8");
+    assert!(unchanged.contains("<max_delay_seconds>30</max_delay_seconds>"));
+    assert!(!unchanged.contains("Must not persist"));
 
     let modified = send_recv(
         &mut stream,
@@ -378,6 +393,7 @@ async fn stateful_modify_agent_group_clears_non_empty_membership() {
     .await;
     let after = after.as_str().expect("valid UTF-8");
     assert!(after.contains("<agents></agents>"));
+    assert!(after.contains("<max_delay_seconds>0</max_delay_seconds>"));
     assert!(!after.contains("<agent id="));
 
     server.shutdown().await;

@@ -14,6 +14,17 @@ use crate::{
     GmpResponse, GmpVersion,
 };
 
+/// Defaults returned by an Agent Control scanner.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct AgentControlConfigDefaults {
+    /// Default configuration used for agents managed by this scanner.
+    pub agent_defaults: Option<crate::responses::agent::AgentConfig>,
+    /// Whether agents should update automatically, when reported.
+    pub update_to_latest: Option<bool>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -26,6 +37,8 @@ pub struct Scanner {
     pub relay_port: Option<u16>,
     pub ca_pub: Option<String>,
     pub credential: Option<NamedEntity>,
+    /// Agent Control defaults, absent on other scanner types or unavailable servers.
+    pub agent_control_config_defaults: Option<AgentControlConfigDefaults>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -58,6 +71,24 @@ impl Scanner {
             relay_port: optional_u16(node, "relay_port", "relay_port")?.filter(|port| *port != 0),
             ca_pub: node.optional_child_text("ca_pub"),
             credential: parse_named_entity(node, "credential")?,
+            agent_control_config_defaults: node
+                .child("agent_control_config_defaults")
+                .map(|defaults| {
+                    Ok::<_, ParseError>(AgentControlConfigDefaults {
+                        agent_defaults: defaults
+                            .child("agent_defaults")
+                            .map(crate::responses::agent::AgentConfig::from_node)
+                            .transpose()?,
+                        update_to_latest: defaults
+                            .child("agent_control_defaults")
+                            .and_then(|control| control.optional_child_text("update_to_latest"))
+                            .map(|value| {
+                                crate::responses::common::parse_bool(&value, "update_to_latest")
+                            })
+                            .transpose()?,
+                    })
+                })
+                .transpose()?,
         })
     }
 }

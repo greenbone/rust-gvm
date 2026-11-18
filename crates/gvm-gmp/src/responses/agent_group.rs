@@ -6,8 +6,8 @@
 use gvm_protocol::Response;
 
 use crate::responses::common::{
-    count_info, parse_document, parse_entity_id, parse_entity_meta, status_from_response,
-    ActionResponse, CountInfo, EntityMeta, NamedEntity, ParseError, XmlNode,
+    count_info, optional_u32, parse_document, parse_entity_id, parse_entity_meta,
+    status_from_response, ActionResponse, CountInfo, EntityMeta, NamedEntity, ParseError, XmlNode,
 };
 use crate::{GmpResponse, GmpVersion};
 
@@ -17,6 +17,7 @@ use crate::{GmpResponse, GmpVersion};
 pub struct AgentGroup {
     pub meta: EntityMeta,
     pub scheduler_cron_time: Option<String>,
+    pub max_delay_seconds: Option<u32>,
     pub agents: Vec<NamedEntity>,
 }
 
@@ -44,6 +45,7 @@ impl AgentGroup {
         Ok(Self {
             meta: parse_entity_meta(node)?,
             scheduler_cron_time: node.optional_child_text("scheduler_cron_time"),
+            max_delay_seconds: optional_u32(node, "max_delay_seconds", "max_delay_seconds")?,
             agents: parse_agents(node)?,
         })
     }
@@ -136,6 +138,7 @@ mod tests {
                     <writable>1</writable>
                     <in_use>0</in_use>
                     <scheduler_cron_time>0 */5 * * *</scheduler_cron_time>
+                    <max_delay_seconds>30</max_delay_seconds>
                     <agents>
                         <agent id="agent-1"><name>Agent One</name></agent>
                         <agent id="agent-2"><name>Agent Two</name></agent>
@@ -153,6 +156,8 @@ mod tests {
         assert_eq!(parsed.counts.filtered, Some(2));
         assert_eq!(parsed.counts.page, Some(1));
         assert_eq!(parsed.items[0].meta.name, "Group One");
+        assert_eq!(parsed.items[0].max_delay_seconds, Some(30));
+        assert_eq!(parsed.items[1].max_delay_seconds, None);
         assert_eq!(
             parsed.items[0].scheduler_cron_time.as_deref(),
             Some("0 */5 * * *")

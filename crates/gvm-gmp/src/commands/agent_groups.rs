@@ -54,6 +54,8 @@ pub struct CreateAgentGroupRequest {
     pub agent_ids: Vec<EntityId>,
     /// Scheduler cron expression used to synchronize the group.
     pub scheduler_cron_time: String,
+    /// Maximum randomized delay in seconds (0 through 2147483647).
+    pub max_delay_seconds: Option<u32>,
     /// Optional comment text included in the request.
     pub comment: Option<String>,
 }
@@ -70,17 +72,23 @@ impl CreateAgentGroupRequest {
             name: name.into(),
             agent_ids,
             scheduler_cron_time: scheduler_cron_time.into(),
+            max_delay_seconds: None,
             comment: None,
         }
     }
 }
 
 impl GmpRequestCodec for CreateAgentGroupRequest {
+    fn validate(&self) -> Result<(), GmpRequestError> {
+        crate::agent_schedule::validate_delay(self.max_delay_seconds)
+    }
+
     fn command(&self) -> Option<GmpCommand> {
         Some(GmpCommand::new("create_agent_group"))
     }
 
     fn encode(&self, _version: GmpVersion) -> Result<Vec<u8>, GmpRequestError> {
+        self.validate()?;
         Ok(create_agent_group_command(self).to_bytes())
     }
 }
@@ -153,6 +161,8 @@ pub struct ModifyAgentGroupRequest {
     pub agent_group_id: EntityId,
     /// Scheduler cron expression used to synchronize the group.
     pub scheduler_cron_time: String,
+    /// Maximum randomized delay in seconds (0 through 2147483647).
+    pub max_delay_seconds: Option<u32>,
     /// Optional resource name.
     pub name: Option<String>,
     /// Optional comment text included in the request.
@@ -171,6 +181,7 @@ impl ModifyAgentGroupRequest {
         Self {
             agent_group_id,
             scheduler_cron_time: scheduler_cron_time.into(),
+            max_delay_seconds: None,
             name: None,
             comment: None,
             agent_ids: CollectionUpdate::Omitted,
@@ -179,6 +190,10 @@ impl ModifyAgentGroupRequest {
 }
 
 impl GmpRequestCodec for ModifyAgentGroupRequest {
+    fn validate(&self) -> Result<(), GmpRequestError> {
+        crate::agent_schedule::validate_delay(self.max_delay_seconds)
+    }
+
     fn command(&self) -> Option<GmpCommand> {
         Some(GmpCommand::new("modify_agent_group"))
     }
@@ -235,6 +250,9 @@ fn create_agent_group_command(request: &CreateAgentGroupRequest) -> XmlCommand {
     let mut cmd = XmlCommand::new("create_agent_group");
     cmd.add_element_with_text("name", &request.name);
     cmd.add_element_with_text("scheduler_cron_time", &request.scheduler_cron_time);
+    if let Some(delay) = request.max_delay_seconds {
+        cmd.add_element_with_text("max_delay_seconds", &delay.to_string());
+    }
     add_text_element(&mut cmd, "comment", request.comment.as_deref());
     add_agent_elements(&mut cmd, &request.agent_ids);
     cmd
@@ -259,6 +277,9 @@ fn modify_agent_group_command(request: &ModifyAgentGroupRequest) -> XmlCommand {
     let mut cmd = XmlCommand::new("modify_agent_group")
         .attribute("agent_group_id", request.agent_group_id.as_str());
     cmd.add_element_with_text("scheduler_cron_time", &request.scheduler_cron_time);
+    if let Some(delay) = request.max_delay_seconds {
+        cmd.add_element_with_text("max_delay_seconds", &delay.to_string());
+    }
     add_text_element(&mut cmd, "name", request.name.as_deref());
     add_text_element(&mut cmd, "comment", request.comment.as_deref());
     match &request.agent_ids {
