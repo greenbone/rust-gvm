@@ -6109,6 +6109,11 @@ fn singularize_resource_type(plural: &str) -> &str {
     }
 }
 
+// gvmd manage.h: OSP, OpenVASD and Agent Controller sensors.
+fn is_sensor_scanner_type(scanner_type: Option<&str>) -> bool {
+    matches!(scanner_type, Some("5" | "8" | "9"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -6386,9 +6391,4 @@ mod tests {
         assert!(xml.contains("<target/>"));
         assert!(xml.contains("<progress>0</progress>"));
     }
-}
-
-// gvmd manage.h: OSP, OpenVASD and Agent Controller sensors.
-fn is_sensor_scanner_type(scanner_type: Option<&str>) -> bool {
-    matches!(scanner_type, Some("5" | "8" | "9"))
 }
