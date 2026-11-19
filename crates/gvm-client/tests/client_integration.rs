@@ -5794,7 +5794,7 @@ async fn assert_partial_scanner_modify_preserves_fields(
         .get_scanner(GetScannerRequest::new(scanner_id.clone()))
         .await
         .expect("get_scanner after partial modify should succeed");
-    assert_eq!(scanner.items[0].port, Some(9391));
+    assert_eq!(scanner.items[0].port, Some(0));
     assert_eq!(scanner.items[0].ca_pub.as_deref(), Some("Replacement CA"));
     assert_eq!(
         scanner.items[0].relay_host.as_deref(),
@@ -5930,7 +5930,7 @@ async fn typed_scanner_lifecycle(client: &mut GmpClient<UnixSocketConnection>) {
         &ScannerConnectionExpectation {
             name: "Renamed Scanner",
             host: "127.0.0.1",
-            port: 9391,
+            port: 0,
             scanner_type: "5",
             ca_pub: "Replacement CA",
             credential_id: "credential-2",
