@@ -21,6 +21,15 @@ pub struct Agent {
     pub update_to_latest: Option<bool>,
     pub status: Option<String>,
     pub version: Option<String>,
+    /// Server-provided operating system; absent or empty values are `None`.
+    pub operating_system: Option<String>,
+    /// Server-provided architecture; absent or empty values are `None`.
+    pub architecture: Option<String>,
+    /// Server-provided os cpe; absent or empty values are `None`.
+    pub os_cpe: Option<String>,
+    /// Server-provided os status; absent or empty values are `None`.
+    pub os_status: Option<String>,
+
     pub last_update_time: Option<String>,
     pub last_contact_time: Option<String>,
     pub scanner: Option<NamedEntity>,
@@ -118,6 +127,11 @@ impl Agent {
             update_to_latest: optional_bool(node, "update_to_latest")?,
             status: node.optional_child_text("status"),
             version: node.optional_child_text("version"),
+            operating_system: node.optional_child_text("operating_system"),
+            architecture: node.optional_child_text("architecture"),
+            os_cpe: node.optional_child_text("os_cpe"),
+            os_status: node.optional_child_text("os_status"),
+
             last_update_time: node.optional_child_text("last_update_time"),
             last_contact_time: node.optional_child_text("last_contact_time"),
             scanner: parse_named_entity(node, "scanner")?,
@@ -486,6 +500,29 @@ mod tests {
             ]
         );
         assert_eq!(parsed.items[1].authorized, Some(false));
+    }
+
+    #[test]
+    fn parses_server_operating_system_metadata() {
+        let response = Response::from(include_str!("../../tests/fixtures/agent_os_metadata.xml"));
+        let parsed = GetAgentsResponse::from_response(&response).expect("agents parse");
+        let agent = &parsed.items[0];
+        assert_eq!(
+            agent.operating_system.as_deref(),
+            Some("Debian GNU/Linux 12")
+        );
+        assert_eq!(agent.architecture.as_deref(), Some("x86_64"));
+        assert_eq!(
+            agent.os_cpe.as_deref(),
+            Some("cpe:/o:debian:debian_linux:12")
+        );
+        assert_eq!(agent.os_status.as_deref(), Some("supported"));
+        for agent in &parsed.items[1..] {
+            assert_eq!(agent.operating_system, None);
+            assert_eq!(agent.architecture, None);
+            assert_eq!(agent.os_cpe, None);
+            assert_eq!(agent.os_status, None);
+        }
     }
 
     #[test]

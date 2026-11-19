@@ -60,3 +60,12 @@ attribute. It is parsed strictly as integer `0` or `1` and defaults to `1`
 when omitted. The canonical request now exposes `Option<bool>` without
 changing its constructor. See the
 [typed projection evidence](typed-schema-projections-gvmd-evidence.md#agent-support-bundle-encryption).
+
+## Operating-system metadata (#853)
+
+Current gvmd `150a4cfad39d00f45ef147c35e1a5f27f415c8e9`,
+`src/gmp_agents.c:178–181`, emits `operating_system`, `architecture`,
+`os_cpe`, and `os_status` as agent children. `Agent` preserves all four as
+optional strings. Missing, empty, and whitespace-only children decode to
+`None`; no OS or status is inferred. The server-shaped
+`agent_os_metadata.xml` fixture covers populated and unknown/legacy responses.
