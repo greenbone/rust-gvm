@@ -4651,6 +4651,18 @@ fn render_scan_report_result_counts(
 }
 
 fn render_scan_report_task(task: &Resource, store: &ResourceStore) -> String {
+    let scan_config = task
+        .attr("config_id")
+        .and_then(|id| Uuid::parse_str(id).ok())
+        .and_then(|id| store.get_typed(&id, "config"))
+        .map(|config| {
+            format!(
+                "<scan_config id=\"{}\"><name>{}</name></scan_config>",
+                config.id,
+                xml_escape(&config.name)
+            )
+        })
+        .unwrap_or_default();
     let target = [
         ("target_id", "target"),
         ("agent_group_id", "agent_group"),
@@ -4683,7 +4695,7 @@ fn render_scan_report_task(task: &Resource, store: &ResourceStore) -> String {
     };
     format!(
         "<task id=\"{id}\"><name>{name}</name><comment>{comment}</comment>\
-         {target}<progress>{progress}</progress></task>",
+         {target}{scan_config}<progress>{progress}</progress></task>",
         id = task.id,
         name = xml_escape(&task.name),
         comment = xml_escape(&task.comment),
@@ -6421,5 +6433,22 @@ mod tests {
         let xml = render_scan_report_task(&task, &store);
         assert!(xml.contains("<target/>"));
         assert!(xml.contains("<progress>0</progress>"));
+    }
+    #[test]
+    fn structured_report_task_preserves_config_and_omits_configless_references() {
+        let store = ResourceStore::new();
+        let config = Resource::new("config", "Full & fast");
+        let config_id = config.id;
+        store.seed(config);
+        let mut task = Resource::new("task", "Configured task");
+        task.set_attr("config_id", &config_id.to_string());
+        let xml = render_scan_report_task(&task, &store);
+        assert!(xml.contains(&format!(
+            "<scan_config id=\"{config_id}\"><name>Full &amp; fast</name></scan_config>"
+        )));
+        for kind in ["CVE", "container", "agent"] {
+            let task = Resource::new("task", kind);
+            assert!(!render_scan_report_task(&task, &store).contains("<scan_config"));
+        }
     }
 }
