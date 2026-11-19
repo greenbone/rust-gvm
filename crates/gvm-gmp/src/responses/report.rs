@@ -304,7 +304,14 @@ pub struct ReportPortSummary {
 pub struct ReportApplicationSummary {
     pub id: Option<String>,
     pub name: Option<String>,
+    /// Server-calculated severity, preserved without recomputation.
     pub severity: Option<String>,
+    /// Number of affected hosts; absent or empty counts are `None`.
+    pub hosts_count: Option<u32>,
+    /// Server-calculated occurrences; absent or empty counts are `None`.
+    pub occurrences: Option<u32>,
+    /// Server-provided threat level; absent or empty values are `None`.
+    pub threat: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -785,7 +792,18 @@ macro_rules! impl_report_summary {
 
 impl_report_summary!(ReportHostSummary);
 impl_report_summary!(ReportPortSummary);
-impl_report_summary!(ReportApplicationSummary);
+impl ReportApplicationSummary {
+    fn from_node(node: &crate::responses::common::XmlNode) -> Result<Self, ParseError> {
+        Ok(Self {
+            id: node.attr("id").map(ToString::to_string),
+            name: node.optional_child_text("name"),
+            severity: node.optional_child_text("severity"),
+            hosts_count: optional_u32(node, "hosts_count", "application.hosts_count")?,
+            occurrences: optional_u32(node, "occurrences", "application.occurrences")?,
+            threat: node.optional_child_text("threat"),
+        })
+    }
+}
 impl_report_summary!(ReportCveSummary);
 
 impl ReportOperatingSystemSummary {
@@ -932,14 +950,29 @@ impl_report_detail_response!(
     "report_port_count",
     "port_count"
 );
-impl_report_detail_response!(
-    GetReportApplicationsResponse,
-    ReportApplicationSummary,
-    "application",
-    "applications",
-    "report_application_count",
-    "application_count"
-);
+impl GetReportApplicationsResponse {
+    pub fn from_response(response: &Response) -> Result<Self, ParseError> {
+        let (status, status_text) = status_from_response(response)?;
+        let root = parse_document(response.data())?;
+        let container = root.child("applications").unwrap_or(&root);
+        let items = container
+            .children_named("application")
+            .map(ReportApplicationSummary::from_node)
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self {
+            status,
+            status_text,
+            items,
+            counts: report_detail_count_info(
+                &root,
+                "report_application_count",
+                "application_count",
+                root.child("applications"),
+                "applications.count",
+            )?,
+        })
+    }
+}
 impl_report_detail_response!(
     GetReportCvesResponse,
     ReportCveSummary,
@@ -1192,6 +1225,47 @@ mod tests {
     use gvm_protocol::Response;
 
     use super::*;
+
+    #[test]
+    fn application_agent_counts_preserve_server_severity() {
+        // Agent-derived aggregate: highest severity and fallback occurrences are
+        // calculated by gvmd, not inferred from the host count by this client.
+        let parsed = GetReportApplicationsResponse::from_response(&Response::from(include_str!(
+            "../../tests/fixtures/report_agent_applications.xml"
+        )))
+        .expect("server applications parse");
+        let app = &parsed.items[0];
+        assert_eq!(app.id, None);
+        assert_eq!(app.hosts_count, Some(2));
+        assert_eq!(app.occurrences, Some(5));
+        assert_eq!(app.severity.as_deref(), Some("9.8"));
+        assert_eq!(app.threat.as_deref(), Some("High"));
+        for app in &parsed.items[1..3] {
+            assert_eq!(app.hosts_count, None);
+            assert_eq!(app.occurrences, None);
+            assert_eq!(app.threat, None);
+        }
+        assert_eq!(parsed.items[3].hosts_count, Some(0));
+        assert_eq!(parsed.items[3].occurrences, Some(0));
+    }
+
+    #[test]
+    fn malformed_application_counts_are_rejected() {
+        for field in ["hosts_count", "occurrences"] {
+            for value in ["invalid", "-1", "1.5", "4294967296"] {
+                let xml = format!(
+                    "<get_report_applications_response status=\"200\" status_text=\"OK\"><applications><application><name>Agent app</name><{field}>{value}</{field}></application></applications></get_report_applications_response>"
+                );
+                let error =
+                    GetReportApplicationsResponse::from_response(&Response::from(xml.as_str()))
+                        .expect_err("malformed count rejected");
+                assert!(
+                    matches!(error, ParseError::InvalidValue { field: actual, .. }
+                    if actual == format!("application.{field}"))
+                );
+            }
+        }
+    }
 
     #[test]
     fn parses_multiple_reports() {

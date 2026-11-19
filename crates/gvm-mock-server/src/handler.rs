@@ -3908,9 +3908,9 @@ impl SessionHandler {
             "get_report_applications" => (
                 "application",
                 vec![
-                    "<application id=\"app-1\"><name>OpenSSH</name><severity>6.5</severity></application>"
+                    "<application><name>OpenSSH</name><hosts_count>2</hosts_count><occurrences>5</occurrences><severity>9.8</severity><threat>High</threat></application>"
                         .to_string(),
-                    "<application id=\"app-2\"><name>nginx</name><severity>4.0</severity></application>"
+                    "<application><name>nginx</name><hosts_count>1</hosts_count><occurrences>3</occurrences><severity>4.0</severity><threat>Medium</threat></application>"
                         .to_string(),
                 ],
             ),

@@ -13,6 +13,12 @@
 - Native Rust toolchain pending workspace provisioning; no host packages installed.
 - #851 local verification: workspace unit/integration tests with `gvm-client/unix-socket-tests` passed (including group round trips and rollback); initial doc test failed because default temp is noexec. Re-ran `cargo test --workspace --doc` with workspace TMPDIR and linker flags: passed. Strict workspace all-targets clippy with socket-test features passed; cargo fmt/diff checks passed. GMP group parser recheck passed after final assertions.
 - Tooling: sourced /workspace/.cache/rust-tooling/env; RUSTFLAGS/RUSTDOCFLAGS `-C linker=rust-lld -L native=/workspace/.cache/rust-tooling/native-libs`, TMPDIR `/workspace/.cache/rust-tooling/tmp`. No host changes.
+- #852 cherry-picked and reviewed: redacted token wrapper, discovery gate, deterministic mock and inventories. Stacked focused tests passed: 4 socket-client tests and 3 GMP tests. PR #863 based on #861.
+- #853 cherry-picked and reviewed: four optional OS fields plus independent populated/absent/empty fixture. Twelve relevant parser tests passed. PR #864 based on #863.
+- #854 cherry-picked and reviewed: optional anonymization with all nine encryption/anonymization combinations; command tests and 16 versioned-client tests passed. PR #865 based on #864.
+- #855 cherry-picked and reviewed: application counts/threat preserve server severity; independent malformed/absent/empty/zero fixtures and client/mock drill-down test passed. Full final-stack workspace run underway.
+- #851 full CI passed at 8668795 (run 44398663891), including all features, stable/MSRV, strict clippy, coverage, documentation and python-gvm integration. Upper PR CI dispatched explicitly because pull_request branch filters exclude stacked bases.
+- Final combined local verification: `cargo test --workspace --features gvm-client/unix-socket-tests` passed 1,585 tests including doctests (one pre-existing ignored doctest); all 121 target summaries passed. Strict clippy found one test-only missing semicolon in #854; repaired in that layer and rebased #855. Strict workspace all-targets clippy and fmt now pass. No behavior changed by the lint repair.
 
 ## 2026-11-19 — PR #861 review
 - Confirmed pinned gvmd requires nonempty modify-agent-group name before processing delay.
