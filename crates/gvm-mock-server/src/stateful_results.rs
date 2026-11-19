@@ -30,7 +30,8 @@ struct Predicate {
 
 #[derive(Debug)]
 struct ResultQuery {
-    predicates: Vec<Predicate>,
+    predicates: Vec<Vec<Predicate>>,
+    report_restriction: Option<String>,
     first: usize,
     max: usize,
     sort: String,
@@ -44,7 +45,8 @@ struct ResultQuery {
 impl Default for ResultQuery {
     fn default() -> Self {
         Self {
-            predicates: Vec::new(),
+            predicates: vec![Vec::new()],
+            report_restriction: None,
             first: 1,
             max: DEFAULT_MAX_ROWS,
             sort: "id".to_string(),
@@ -142,9 +144,22 @@ fn effective_filter(cmd: &ParsedCommand, store: &ResourceStore) -> Result<String
 
 fn parse_result_filter(filter: &str) -> Result<ResultQuery, String> {
     let mut query = ResultQuery::default();
+    let mut conjunction = false;
     for token in filter.split_whitespace() {
+        if token.eq_ignore_ascii_case("or") {
+            conjunction = false;
+            continue;
+        }
+        if token.eq_ignore_ascii_case("and") {
+            conjunction = true;
+            continue;
+        }
         let (field, relation, value) = split_predicate(token)?;
         match field {
+            "_and_report_id" => {
+                require_equal(relation, field)?;
+                query.report_restriction = Some(value.to_string());
+            }
             "first" => {
                 require_equal(relation, field)?;
                 query.first = value
@@ -191,24 +206,44 @@ fn parse_result_filter(filter: &str) -> Result<ResultQuery, String> {
             }
             "severity" | "qod" => {
                 validate_finite_number(value, field)?;
-                query.predicates.push(Predicate {
-                    field: field.to_string(),
-                    relation,
-                    value: value.to_string(),
-                });
+                append_predicate(
+                    &mut query.predicates,
+                    conjunction,
+                    Predicate {
+                        field: field.to_string(),
+                        relation,
+                        value: value.to_string(),
+                    },
+                );
+                conjunction = false;
             }
             "id" | "uuid" | "name" | "host" | "port" | "threat" | "task_id" | "report_id" => {
                 require_equal(relation, field)?;
-                query.predicates.push(Predicate {
-                    field: field.to_string(),
-                    relation,
-                    value: value.to_string(),
-                });
+                append_predicate(
+                    &mut query.predicates,
+                    conjunction,
+                    Predicate {
+                        field: field.to_string(),
+                        relation,
+                        value: value.to_string(),
+                    },
+                );
+                conjunction = false;
             }
             _ => return Err(format!("Unsupported result filter field '{field}'")),
         }
     }
     Ok(query)
+}
+
+// Ordinary predicates default to OR in gvmd; explicit AND binds within a group.
+fn append_predicate(groups: &mut Vec<Vec<Predicate>>, conjunction: bool, predicate: Predicate) {
+    if !conjunction && groups.last().is_some_and(|group| !group.is_empty()) {
+        groups.push(Vec::new());
+    }
+    if let Some(group) = groups.last_mut() {
+        group.push(predicate);
+    }
 }
 
 fn split_predicate(token: &str) -> Result<(&str, Relation, &str), String> {
@@ -295,11 +330,18 @@ fn select_results(
         .into_iter()
         .map(|result| evaluate_result(result, store, query.apply_overrides))
         .filter(|result| result_qod(&result.resource) >= query.min_qod)
+        // gvmd passes this restriction independently of the boolean expression.
         .filter(|result| {
-            query
-                .predicates
-                .iter()
-                .all(|predicate| result_matches(result, predicate, store))
+            query.report_restriction.as_ref().is_none_or(|report_id| {
+                result.resource.attr("report_id") == Some(report_id.as_str())
+            })
+        })
+        .filter(|result| {
+            query.predicates.iter().any(|group| {
+                group
+                    .iter()
+                    .all(|predicate| result_matches(result, predicate, store))
+            })
         })
         .collect::<Vec<_>>();
     sort_results(&mut resources, query);

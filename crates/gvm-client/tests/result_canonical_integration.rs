@@ -254,3 +254,65 @@ async fn both_facades_preserve_result_parse_context() {
     }
     server.shutdown().await;
 }
+
+#[tokio::test]
+async fn report_filter_helper_executes_with_protected_scope_and_typed_counts() {
+    use gvm_gmp::{compose_report_results_filter, Pagination};
+    use gvm_mock_server::Resource;
+
+    let report = Resource::new("report", "Selected report");
+    let report_id = id(&report.id.to_string());
+    let other_report = Resource::new("report", "Other report");
+    let server = MockGmpServer::builder()
+        .mode(ServerMode::Stateful)
+        .version(MockVersion::V22_8)
+        .credentials("admin", "admin")
+        .seed(move |store| {
+            for (name, severity, selected_report) in [
+                ("Selected high", "8.0", report.id),
+                ("Selected medium", "5.0", report.id),
+                ("Unrelated high", "9.0", other_report.id),
+            ] {
+                let mut result = Resource::new("result", name);
+                result.set_attr("severity", severity);
+                result.set_attr("qod", "95");
+                result.set_attr("report_id", &selected_report.to_string());
+                store.seed(result);
+            }
+            store.seed(report.clone());
+            store.seed(other_report.clone());
+        })
+        .unix_socket_auto()
+        .build()
+        .await
+        .expect("server starts");
+    let mut client = client(&server).await;
+    client
+        .authenticate(gvm_gmp::commands::authentication::AuthenticateRequest::new(
+            "admin", "admin",
+        ))
+        .await
+        .expect("authenticate");
+    for (page, expected_name) in [(1, "Selected high"), (2, "Selected medium")] {
+        let filter = compose_report_results_filter(
+            &report_id,
+            Some("severity>7"),
+            Some("OR severity<6 sort=name"),
+            Pagination::new(page, 1),
+        )
+        .expect("strict filter");
+        let response = client
+            .execute(GetResultsRequest {
+                filter_string: Some(filter),
+                get_counts: Some(true),
+                ..GetResultsRequest::default()
+            })
+            .await
+            .expect("scoped result request");
+        assert_eq!(response.items.len(), 1);
+        assert_eq!(response.items[0].meta.name, expected_name);
+        assert_eq!(response.counts.filtered, Some(2));
+        assert_eq!(response.counts.page, Some(1));
+    }
+    server.shutdown().await;
+}
