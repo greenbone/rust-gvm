@@ -472,7 +472,13 @@ impl SessionHandler {
                         || cmd.children.iter().any(|child| {
                             matches!(
                                 child.name.as_str(),
-                                "bind_password" | "bind_dn" | "base_dn" | "tls_mode"
+                                "host"
+                                    | "port"
+                                    | "bind_password"
+                                    | "bind_dn"
+                                    | "base_dn"
+                                    | "tls_mode"
+                                    | "ca_certificate"
                             )
                         }))))
         {

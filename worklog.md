@@ -28,3 +28,10 @@
 - #847 implementation complete: typed AD credentials/metadata, mutually exclusive verification, discovery gating, redaction, and bounded mock rejection.
 - Focused checks passed: AD protocol (4), existing credentials (9), enums (31), AD facade integration (1). Full workspace unit/integration tests passed with unix-socket-tests; initial doctest run hit /tmp noexec, then all workspace doctests passed with TMPDIR under target and workspace-local rust-lld flags.
 - Strict Clippy with unix-socket-tests passed, as did formatting/diff checks. Bare default all-target Clippy trips pre-existing cfg-disabled test-crate missing-doc warnings; enabling integration tests resolves them. All-feature Clippy blocked locally by absent native cc; CI required for native TLS/SSH dependencies.
+
+## 2026-11-19 — PR #866 review
+- Review at f832a831: AD partial updates containing only host, port, clear-port or CA bypass built-in mock rejection.
+- Clean review worktree; adding table-driven typed-client coverage for all eight AD update shapes across Echo/Fixture/Stateful. Stateful test seeds a saved AD credential, authenticates, and checks complete stored snapshots remain unchanged despite accompanying ordinary-field mutations.
+- Tooling uses workspace-local Rust/linker/native libraries and existing AD target cache; no host changes.
+- Confirmed regression fails on original code with false 200 OK, then passes for all 24 mode/update combinations after including host/port/CA children.
+- Full workspace socket-enabled + serde verification: 1,614 tests passed across 124 targets, zero failures, one pre-existing ignored doctest. Strict workspace/all-target Clippy passes after extracting the test case table; formatting/diff checks pass.
