@@ -175,7 +175,7 @@ async fn assert_agent_group_clear_is_sent_and_applied<C>(
     C: GvmConnection + Send,
 {
     server.clear_history();
-    let mut clear = ModifyAgentGroupRequest::new(agent_group_id.clone(), "0 */10 * * *");
+    let mut clear = ModifyAgentGroupRequest::new(agent_group_id.clone(), "Group", "0 */10 * * *");
     clear.agent_ids = CollectionUpdate::Clear;
     let response = client
         .modify_agent_group(clear)
@@ -190,7 +190,7 @@ async fn assert_agent_group_clear_is_sent_and_applied<C>(
     assert_eq!(
         String::from_utf8(command.raw_xml().to_vec()).expect("history should be UTF-8"),
         format!(
-            "<modify_agent_group agent_group_id=\"{}\"><scheduler_cron_time>0 */10 * * *</scheduler_cron_time><agents/></modify_agent_group>",
+            "<modify_agent_group agent_group_id=\"{}\"><scheduler_cron_time>0 */10 * * *</scheduler_cron_time><name>Group</name><agents/></modify_agent_group>",
             agent_group_id.as_str()
         )
     );
@@ -633,7 +633,8 @@ async fn next_client_agent_groups_round_trip() {
     assert_eq!(list_response.status, 200);
     assert_eq!(list_response.counts.total, Some(2));
 
-    let mut modify_request = ModifyAgentGroupRequest::new(agent_group_id.clone(), "0 */10 * * *");
+    let mut modify_request =
+        ModifyAgentGroupRequest::new(agent_group_id.clone(), "Group", "0 */10 * * *");
     modify_request.name = Some("Updated Agent Group".into());
     modify_request.max_delay_seconds = Some(60);
     modify_request.comment = Some("modified through client".into());

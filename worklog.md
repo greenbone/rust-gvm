@@ -19,3 +19,10 @@
 - #855 cherry-picked and reviewed: application counts/threat preserve server severity; independent malformed/absent/empty/zero fixtures and client/mock drill-down test passed. Full final-stack workspace run underway.
 - #851 full CI passed at 8668795 (run 44398663891), including all features, stable/MSRV, strict clippy, coverage, documentation and python-gvm integration. Upper PR CI dispatched explicitly because pull_request branch filters exclude stacked bases.
 - Final combined local verification: `cargo test --workspace --features gvm-client/unix-socket-tests` passed 1,585 tests including doctests (one pre-existing ignored doctest); all 121 target summaries passed. Strict clippy found one test-only missing semicolon in #854; repaired in that layer and rebased #855. Strict workspace all-targets clippy and fmt now pass. No behavior changed by the lint repair.
+
+## 2026-11-19 — PR #861 review
+- Confirmed pinned gvmd requires nonempty modify-agent-group name before processing delay.
+- Constructor now takes a name; validation/encoding reject missing or empty names. Updated callers and migration guidance.
+- Stateful mock rejects nameless updates before mutation; regression compares complete response before/after rejected schedule, delay, comment, and membership changes.
+- Optional serde accepts legacy cron strings and current objects while retaining structured serialization, with malformed-input and round-trip tests.
+- Verification: workspace tests with serde and both Unix-socket features passed 1,599 tests across 122 targets (zero failures, one pre-existing ignored doctest). Strict workspace/all-target Clippy with those features passed. Formatting and diff checks passed. No live-server qualification.
