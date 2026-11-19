@@ -56,10 +56,11 @@ pub mod version;
 pub mod web_application_target;
 
 pub use agent::{
-    Agent, AgentConfig, AgentControlConfig, AgentHeartbeatConfig, AgentRetryConfig,
-    AgentScriptExecutorConfig, AgentSupportBundle, DeleteAgentResponse,
-    GetAgentInstallerInstructionResponse, GetAgentSupportBundleResponse, GetAgentsResponse,
-    ModifyAgentControlScanConfigResponse, ModifyAgentResponse, SyncAgentsResponse,
+    Agent, AgentConfig, AgentControlConfig, AgentHeartbeatConfig, AgentInventoryToken,
+    AgentRetryConfig, AgentScriptExecutorConfig, AgentSupportBundle, DeleteAgentResponse,
+    GetAgentInstallerInstructionResponse, GetAgentInventoryTokenResponse,
+    GetAgentSupportBundleResponse, GetAgentsResponse, ModifyAgentControlScanConfigResponse,
+    ModifyAgentResponse, SyncAgentsResponse,
 };
 pub use agent_group::{
     AgentGroup, CloneAgentGroupResponse, CreateAgentGroupResponse, DeleteAgentGroupResponse,

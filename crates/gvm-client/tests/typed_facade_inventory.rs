@@ -11,6 +11,7 @@ const INTEGRATION_COVERED: &[&str] = &[
     "get_version",
     "authenticate",
     "get_agents",
+    "get_agent_inventory_token",
     "get_agent",
     "modify_agent",
     "delete_agent",
@@ -392,6 +393,7 @@ fn typed_methods() -> Vec<TypedMethod> {
 
 fn normalized_integration_sources() -> String {
     [
+        include_str!("agent_inventory_token.rs"),
         include_str!("audit_integration.rs"),
         include_str!("client_integration.rs"),
         include_str!("report_config_integration.rs"),
@@ -412,7 +414,7 @@ fn normalized_integration_sources() -> String {
 #[test]
 fn every_public_typed_helper_has_exactly_one_enforced_classification() {
     let public = public_typed_methods();
-    assert_eq!(public.len(), 267);
+    assert_eq!(public.len(), 268);
     let mut classified = BTreeSet::new();
 
     for (class, methods) in [
@@ -441,7 +443,7 @@ fn every_public_typed_helper_has_exactly_one_enforced_classification() {
 #[test]
 fn execution_paths_preserve_the_typed_facade_contract() {
     let methods = typed_methods();
-    assert_eq!(methods.len(), 267);
+    assert_eq!(methods.len(), 268);
 
     let mut execute_helpers = BTreeSet::new();
     let mut raw_helpers = BTreeSet::new();
@@ -496,7 +498,7 @@ fn execution_paths_preserve_the_typed_facade_contract() {
         }
     }
 
-    assert_eq!(execute_helpers.len(), 264);
+    assert_eq!(execute_helpers.len(), 265);
     assert_eq!(
         raw_helpers,
         FROZEN_TICKET_HELPERS.map(str::to_string).into()

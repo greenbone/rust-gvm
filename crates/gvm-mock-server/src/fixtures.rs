@@ -65,6 +65,10 @@ impl FixtureStore {
     }
 
     fn load_builtins(&mut self) {
+        self.fixtures.insert(
+            "get_agent_inventory_token".to_string(),
+            agent_inventory_token_response(),
+        );
         // get_version
         self.fixtures.insert(
             "get_version".to_string(),
@@ -501,6 +505,11 @@ impl FixtureStore {
                 .to_string(),
         );
     }
+}
+
+/// Deterministic nonfunctional token fixture; no signing or issuance is performed.
+pub(crate) fn agent_inventory_token_response() -> String {
+    "<get_agent_inventory_token_response status=\"200\" status_text=\"OK\"><token>mock-agent-inventory-token</token></get_agent_inventory_token_response>".to_string()
 }
 
 #[cfg(test)]

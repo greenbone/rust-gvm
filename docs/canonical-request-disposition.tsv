@@ -316,6 +316,7 @@ facade	crates/gvm-client/src/typed/agents.rs	get_agent	retained-construction	Ret
 facade	crates/gvm-client/src/typed/agents.rs	get_agent_group	retained-construction	Retained for discoverability; accepts the canonical GetAgentGroupRequest unchanged.
 facade	crates/gvm-client/src/typed/agents.rs	get_agent_groups	retained-construction	Retained for discoverability; accepts the canonical GetAgentGroupsRequest unchanged.
 facade	crates/gvm-client/src/typed/agents.rs	get_agent_installer_instruction	retained-construction	Retained for discoverability; accepts the canonical GetAgentInstallerInstructionRequest unchanged.
+facade	crates/gvm-client/src/typed/agents.rs	get_agent_inventory_token	retained-construction	Retained for discoverability; accepts the canonical GetAgentInventoryTokenRequest unchanged.
 facade	crates/gvm-client/src/typed/agents.rs	get_agent_support_bundle	retained-construction	Retained for discoverability; accepts the canonical GetAgentSupportBundleRequest unchanged.
 facade	crates/gvm-client/src/typed/agents.rs	get_agents	retained-construction	Retained for discoverability; accepts the canonical GetAgentsRequest unchanged.
 facade	crates/gvm-client/src/typed/agents.rs	get_integration_config	retained-construction	Retained for discoverability; accepts the canonical GetIntegrationConfigRequest unchanged.
@@ -736,6 +737,7 @@ request	crates/gvm-gmp/src/commands/agent_groups.rs	GetAgentGroupsRequest	canoni
 request	crates/gvm-gmp/src/commands/agent_groups.rs	ModifyAgentGroupRequest	canonical-request	Complete modify input with direct metadata/encoding and typed response.
 request	crates/gvm-gmp/src/commands/agents.rs	DeleteAgentRequest	canonical-request	Complete delete input with direct metadata/encoding and typed response.
 request	crates/gvm-gmp/src/commands/agents.rs	GetAgentInstallerInstructionRequest	canonical-request	Complete installer-instruction input with direct metadata/encoding and typed response.
+request	crates/gvm-gmp/src/commands/agents.rs	GetAgentInventoryTokenRequest	canonical-request	No-argument inventory token input with direct metadata/encoding and typed redacted response.
 request	crates/gvm-gmp/src/commands/agents.rs	GetAgentRequest	canonical-request	Complete detail input with semantic alias metadata, direct encoding, and typed response.
 request	crates/gvm-gmp/src/commands/agents.rs	GetAgentSupportBundleRequest	canonical-request	Complete support-bundle input, including optional gvmd encryption selection, with direct metadata/encoding and typed response.
 request	crates/gvm-gmp/src/commands/agents.rs	GetAgentsRequest	canonical-request	Complete list input with direct metadata/encoding and typed response.

@@ -567,6 +567,9 @@ impl SessionHandler {
             "get_features" => render_features_response(),
             "get_license" => render_license_response(store),
             "get_settings" => self.handle_get_settings(cmd, store),
+            "get_agent_inventory_token" => {
+                crate::fixtures::agent_inventory_token_response().into_bytes()
+            }
             "get_agent_installer_instruction" => render_agent_installer_instruction_response(cmd),
             "get_agent_support_bundle" => render_agent_support_bundle_response(cmd),
             "create_asset" => self.handle_create_asset(cmd, store),
@@ -5228,7 +5231,7 @@ fn render_mock_report_export_download(export: &MockReportExport) -> String {
 }
 
 fn render_help_response(cmd: &ParsedCommand, version: GmpVersion) -> Vec<u8> {
-    const COMMANDS: [(&str, &str); 13] = [
+    const COMMANDS: [(&str, &str); 14] = [
         ("cancel_report_export", "Cancel a report export"),
         ("download_report_export", "Download a report export"),
         (
@@ -5246,6 +5249,10 @@ fn render_help_response(cmd: &ParsedCommand, version: GmpVersion) -> Vec<u8> {
         (
             "export_scan_report",
             "Create an asynchronous scan report export",
+        ),
+        (
+            "get_agent_inventory_token",
+            "Issue an agent inventory token",
         ),
         ("get_configs", "Get scan configurations"),
         ("get_feeds", "Get feed information"),

@@ -25,6 +25,7 @@ This is a fast orientation guide for coding agents. It points to ownership bound
 - `docs/alternate-target-request-gvmd-evidence.md`: pinned gvmd evidence for canonical OCI-image and web-application target requests.
 - `docs/agent-group-request-gvmd-evidence.md`: pinned gvmd evidence for the canonical agent-group lifecycle.
 - `docs/agent-scheduler-gvmd-evidence.md`: structured scheduler entries, delay bounds, scanner defaults, and legacy response policy.
+- `docs/agent-inventory-token-gvmd-evidence.md`: inventory-token contract, discovery, confidentiality, and mock boundaries.
 - `docs/agent-request-gvmd-evidence.md`: pinned gvmd evidence for canonical agent operations and support-bundle decoding.
 - `docs/integration-config-request-gvmd-evidence.md`: pinned gvmd evidence for canonical integration-configuration queries, replacement validation, and clearing.
 - `docs/port-list-request-gvmd-evidence.md`: pinned gvmd evidence for canonical port-list and port-range operations, including the corrected range payload.
@@ -169,11 +170,11 @@ Changing client behavior:
 - `crates/gvm-client/src/error.rs`: high-level error variants and display behavior.
 - `crates/gvm-client/src/streaming.rs`: borrowed exact-byte response stream, completion, drain, copy-to-sink, and invalidation lifecycle.
 - Tests live under `crates/gvm-client/tests/`.
-- `canonical_request_surface_inventory.rs` protects the exact 1,039-row
+- `canonical_request_surface_inventory.rs` protects the exact 1,041-row
   disposition, retained rationale, removed-symbol, frozen-ticket, raw escape,
   and v0.6.0 mapping contracts.
 - `typed_facade_inventory.rs` parses every public typed helper and enforces the
-  264 canonical execute delegates plus three frozen ticket raw paths.
+  265 canonical execute delegates plus three frozen ticket raw paths.
 
 Changing transport behavior:
 

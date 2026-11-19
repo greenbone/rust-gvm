@@ -32,6 +32,13 @@ or typed helpers. The commands are therefore represented in the registry and
 current-schema count but not in any version-only count above. See the pinned
 [report-export evidence](report-export-lifecycle-gvmd-evidence.md).
 
+`get_agent_inventory_token` requires GMP 22.8 plus positive help discovery:
+older agent-enabled servers also advertise 22.8. It is qualified from current
+public source, not the older pinned schema. The mock issues only a fixed,
+nonfunctional token; unavailable issuance, disabled builds, denied access and
+server errors are injectable fixtures, not a simulated signer or ACL engine.
+See [inventory-token evidence](agent-inventory-token-gvmd-evidence.md).
+
 `get_audit_report` and `get_audit_report_hosts` are gated at 22.7 and exposed
 through `Gmp227Commands` on both `Gmp227` and `GmpNext`. The placement follows
 the reviewed gvmd build contract rather than commit dates: default builds set
@@ -52,16 +59,16 @@ the canonical request until the server advertises 22.8.
 
 ## Command and mock qualification
 
-The registry contains 164 wire command names:
+The registry contains 165 wire command names:
 
 | Qualification | Count | Meaning |
 |---|---:|---|
 | Stateful mock behavior | 151 | Bespoke behavior or deterministic generic CRUD |
-| Fixture mock behavior | 8 | Deterministic built-in fixture response |
+| Fixture mock behavior | 9 | Deterministic built-in fixture response |
 | Echo-only mock behavior | 4 | Intentionally limited to a generic success response |
 | Explicitly rejected mock behavior | 1 | Known schema name with a source-backed negative built-in response |
 | Current pinned `GMP.xml.in` | 164 | Present in the public schema snapshot |
-| Public gvmd source only | 0 | Implemented publicly but omitted from that schema |
+| Public gvmd source only | 1 | Implemented publicly but omitted from that schema |
 | Legacy compatibility | 0 | Retained for public legacy-client compatibility |
 
 Mock support is test support, not proof of real-gvmd conformance. In particular,

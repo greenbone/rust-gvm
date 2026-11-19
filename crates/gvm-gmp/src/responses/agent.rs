@@ -353,6 +353,55 @@ pub type DeleteAgentResponse = ActionResponse;
 pub type SyncAgentsResponse = ActionResponse;
 pub type ModifyAgentControlScanConfigResponse = ActionResponse;
 
+/// Confidential token issued for agent inventory access.
+/// Debug output is always redacted; explicitly access the token with `as_str`.
+#[derive(Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
+pub struct AgentInventoryToken(String);
+
+impl AgentInventoryToken {
+    /// Expose the token for its intended authentication use, not logging.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Debug for AgentInventoryToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("AgentInventoryToken([REDACTED])")
+    }
+}
+
+/// Successful token issuance. Serialization explicitly exposes the token.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct GetAgentInventoryTokenResponse {
+    pub status: u16,
+    pub status_text: String,
+    pub token: AgentInventoryToken,
+}
+
+impl GetAgentInventoryTokenResponse {
+    pub fn from_response(response: &Response) -> Result<Self, ParseError> {
+        let (status, status_text) = status_from_response(response)?;
+        let root = parse_document(response.data())?;
+        Ok(Self {
+            status,
+            status_text,
+            token: AgentInventoryToken(root.required_child_text("token")?),
+        })
+    }
+}
+
+impl GmpResponse for GetAgentInventoryTokenResponse {
+    fn decode(response: &Response, _version: GmpVersion) -> Result<Self, ParseError> {
+        Self::from_response(response)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use gvm_protocol::Response;

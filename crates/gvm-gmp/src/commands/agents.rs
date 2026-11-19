@@ -513,6 +513,25 @@ fn add_u32_child(parent: &mut XmlElement, name: &str, value: Option<u32>) {
     }
 }
 
+/// No-argument request for a confidential agent inventory token.
+/// Availability must be confirmed through the server's help listing.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct GetAgentInventoryTokenRequest;
+
+impl GmpRequestCodec for GetAgentInventoryTokenRequest {
+    fn command(&self) -> Option<GmpCommand> {
+        Some(GmpCommand::new("get_agent_inventory_token"))
+    }
+
+    fn encode(&self, _version: GmpVersion) -> Result<Vec<u8>, GmpRequestError> {
+        Ok(XmlCommand::new("get_agent_inventory_token").to_bytes())
+    }
+}
+
+impl GmpRequest for GetAgentInventoryTokenRequest {
+    type Response = crate::responses::GetAgentInventoryTokenResponse;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
