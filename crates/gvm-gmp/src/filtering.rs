@@ -151,8 +151,9 @@ pub fn compose_report_results_filter(
     crate::types::EntityId::new(report_id.as_str())?;
     let mut clauses = Vec::new();
     for fragment in [saved_filter, inline_filter].into_iter().flatten() {
-        let fragment = FilterFragment::new(
-            fragment,
+        let visible = strict_visible_filter(fragment)?;
+        FilterFragment::new(
+            visible.as_str(),
             &[
                 "report_id",
                 "_report_id",
@@ -169,9 +170,9 @@ pub fn compose_report_results_filter(
                 "_ignore_pagination",
             ],
         )?;
-        validate_strict_comparators(fragment.as_str())?;
-        if !fragment.as_str().is_empty() {
-            clauses.push(fragment.into_inner());
+        validate_strict_comparators(&visible)?;
+        if !fragment.trim().is_empty() {
+            clauses.push(fragment.trim().to_string());
         }
     }
     let (first, rows) = pagination.gvmd_window();
@@ -181,27 +182,81 @@ pub fn compose_report_results_filter(
     Ok(clauses.join(" "))
 }
 
-fn validate_strict_comparators(fragment: &str) -> Result<(), ReportResultsFilterError> {
-    let mut quote = None;
-    let mut escaped = false;
-    let mut previous_nonspace = None;
-    let mut token_operator = false;
+// Mask only literals recognized by pinned gvmd split_filter. In particular,
+// apostrophes and backslashes are ordinary bytes, and embedded double quotes
+// are not openers. Keep byte offsets stable for comparator diagnostics. Do not
+// change legacy FilterFragment's historical quoting/escaping contract.
+fn strict_visible_filter(fragment: &str) -> Result<String, ReportResultsFilterError> {
+    let mut visible = fragment.as_bytes().to_vec();
+    let mut quoted = false;
+    let mut between = true;
+    let mut column = false;
+    let mut prefix = false;
+    let mut value_start = 0;
     for (offset, byte) in fragment.bytes().enumerate() {
-        if let Some(active) = quote {
-            if escaped {
-                escaped = false;
-            } else if byte == b'\\' {
-                escaped = true;
-            } else if byte == active {
-                quote = None;
+        if quoted {
+            visible[offset] = b'x';
+            if byte == b'"' {
+                quoted = false;
+                between = true;
+                visible[offset] = b' ';
             }
             continue;
         }
-        if matches!(byte, b'"' | b'\'') {
-            quote = Some(byte);
-            previous_nonspace = Some(byte);
-            continue;
+        match byte {
+            b'"' => {
+                if between || ((column || prefix) && offset == value_start) {
+                    quoted = true;
+                    between = false;
+                    column = false;
+                    prefix = false;
+                }
+                visible[offset] = b'x';
+            }
+            b'\'' => {
+                visible[offset] = b'x';
+                if between {
+                    between = false;
+                    column = false;
+                    prefix = false;
+                }
+            }
+            b' ' | b'\t' | b'\n' | b'\r' => between = true,
+            b'=' | b'~' if between => {
+                between = false;
+                column = false;
+                prefix = true;
+                value_start = offset + 1;
+            }
+            b'=' | b'~' | b':' | b'>' | b'<' => {
+                if between {
+                    between = false;
+                    column = false;
+                    prefix = false;
+                } else if !column {
+                    column = true;
+                    value_start = offset + 1;
+                }
+            }
+            _ if between => {
+                between = false;
+                column = false;
+                prefix = false;
+            }
+            _ => {}
         }
+    }
+    if quoted {
+        return Err(ReportResultsFilterError::UnterminatedQuote);
+    }
+    // Replacing entire quoted UTF-8 spans with ASCII preserves valid UTF-8.
+    Ok(String::from_utf8(visible).expect("masked UTF-8 filter"))
+}
+
+fn validate_strict_comparators(fragment: &str) -> Result<(), ReportResultsFilterError> {
+    let mut previous_nonspace = None;
+    let mut token_operator = false;
+    for (offset, byte) in fragment.bytes().enumerate() {
         if byte.is_ascii_whitespace() {
             token_operator = false;
             continue;
@@ -218,9 +273,6 @@ fn validate_strict_comparators(fragment: &str) -> Result<(), ReportResultsFilter
             token_operator = true;
         }
         previous_nonspace = Some(byte);
-    }
-    if quote.is_some() {
-        return Err(ReportResultsFilterError::UnterminatedQuote);
     }
     if previous_nonspace.is_some_and(|byte| matches!(byte, b'=' | b'>' | b'<' | b'~' | b':')) {
         return Err(ReportResultsFilterError::Comparator {

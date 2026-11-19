@@ -58,7 +58,7 @@ fn both_inputs_reject_scope_and_pagination_overrides_quote_aware() {
             }
         }
     }
-    let literal = r#"name="a\" first=1 severity>=5" comment='rows=10 _and_report_id=x <=5'"#;
+    let literal = r#"name="first=1 severity>=5" comment="rows=10 _and_report_id=x <=5""#;
     assert!(compose(None, Some(literal)).is_ok());
     assert!(compose(None, Some(r#"name="literal" ROWS=2"#)).is_err());
 }
@@ -95,7 +95,7 @@ fn strict_comparators_do_not_change_legacy_escape_hatch() {
         "name~foo",
         "name:foo",
         r#"name="severity>=5""#,
-        r#"comment='x <= 5'"#,
+        r#"comment="x <= 5""#,
     ] {
         assert!(compose(None, Some(fragment)).is_ok(), "{fragment}");
     }
@@ -119,4 +119,35 @@ fn composed_text_uses_existing_request_xml_escaping() {
     assert!(xml.contains("a&amp;b"));
     assert!(xml.contains("_and_report_id=report-1"));
     assert!(!xml.contains("filt_id="));
+}
+
+#[test]
+fn strict_quotes_follow_gvmd_not_shell_escaping() {
+    // gvmd treats apostrophes and backslashes as ordinary bytes. An embedded
+    // double quote starts a literal only at a token/value boundary.
+    for fragment in [
+        "name='benign _and_report_id=other'",
+        r#"name="benign\" _and_report_id=other x="end""#,
+        r#"name=ab"cd _and_report_id=other x="end""#,
+        "name='benign rows=99'",
+        r#"name="benign\" first=99 x="end""#,
+        "name='severity>=5'",
+        r#"name="benign\" severity>=5 x="end""#,
+    ] {
+        for (saved, inline) in [(Some(fragment), None), (None, Some(fragment))] {
+            assert!(compose(saved, inline).is_err(), "{fragment}");
+        }
+    }
+    for fragment in [
+        r#"name="_and_report_id=other >=5""#,
+        r#"name="ends in backslash\""#,
+        r#"name=abc"def"#,
+        "name=O'Brien",
+    ] {
+        assert!(compose(None, Some(fragment)).is_ok(), "{fragment}");
+    }
+    assert_eq!(
+        compose(None, Some(r#"name='a" b'"#)),
+        Ok("name='a\" b' _and_report_id=report-1 first=4 rows=3".to_string())
+    );
 }

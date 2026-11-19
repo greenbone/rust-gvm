@@ -76,3 +76,8 @@
 - Corrected bounded result mock to source-supported default OR / explicit AND groups, with protected report restriction evaluated independently before counts/paging.
 - Verification: GMP filtering unit tests (23), result request tests (7), new strict composition tests (4), stateful result conformance (6), typed client result integration (6); fmt check and strict focused Clippy on all touched libraries/test targets passed. Broad all-target Clippy additionally attempted and blocked by pre-existing missing crate docs in agent_schedule_serde_test.rs; no unrelated file modified. Existing manifest unused-workspace-dependency warnings remain.
 - Tests use /workspace/866-test-env with CARGO_TARGET_DIR=/workspace/.cache/upstream-filter-target. No live gvmd qualification.
+
+## PR #872 exact-head security review
+- Head 64b9d018 completed checks green so far; all-features, coverage and Geiger pending. No failed checks observed.
+- Independent source review found strict/legacy quote mismatch: gvmd recognizes only boundary double quotes and no backslash escapes. Added regression demonstrating old helper accepted hidden `_and_report_id`; strict-only mask now follows pinned split_filter states, preserving legacy API behavior. New regressions cover both inputs, pagination, inclusive operators, embedded quotes, apostrophes and trailing backslashes.
+- Verification: 40 focused tests passed (23 legacy filtering, 5 strict helper, 6 enabled mock, 6 typed client); fmt/diff checks and strict GMP library/helper-target Clippy passed. Original head CI and Security workflows both completed SUCCESS. No merge requested/performed.
