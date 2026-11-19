@@ -1603,6 +1603,11 @@ impl SessionHandler {
             resource.set_attr("scheduler_cron_time", &scheduler_cron_time);
         }
         if resource_type == "agent_group" {
+            let delay = match agent_group_delay(cmd) {
+                Ok(delay) => delay,
+                Err(error) => return error_response(&cmd.name, 400, error),
+            };
+            resource.set_attr("max_delay_seconds", &delay.to_string());
             let agent_ids = nested_child_ids(cmd, "agents", "agent");
             if !agent_ids.is_empty() {
                 resource.set_attr("agent_ids", &agent_ids.join(","));
@@ -2515,6 +2520,17 @@ impl SessionHandler {
         let new_fixed_note = parse_element_text(raw_xml, "fixed_note");
         let new_closed_note = parse_element_text(raw_xml, "closed_note");
         let new_scheduler_cron_time = parse_element_text(raw_xml, "scheduler_cron_time");
+        let new_agent_group_delay = if resource_type == "agent_group" {
+            if cmd.child_text("name").is_none_or(str::is_empty) {
+                return error_response(&cmd.name, 400, "Missing or empty <name>");
+            }
+            match agent_group_delay(cmd) {
+                Ok(delay) => Some(delay),
+                Err(error) => return error_response(&cmd.name, 400, error),
+            }
+        } else {
+            None
+        };
         let new_agent_group_agent_ids = (resource_type == "agent_group")
             .then(|| {
                 cmd.children
@@ -3137,6 +3153,9 @@ impl SessionHandler {
             }
             if let Some(ref scheduler_cron_time) = new_scheduler_cron_time {
                 r.set_attr("scheduler_cron_time", scheduler_cron_time);
+            }
+            if let Some(delay) = new_agent_group_delay {
+                r.set_attr("max_delay_seconds", &delay.to_string());
             }
             if let Some(ref agent_ids) = new_agent_group_agent_ids {
                 if agent_ids.is_empty() {
@@ -6449,6 +6468,50 @@ mod tests {
         for kind in ["CVE", "container", "agent"] {
             let task = Resource::new("task", kind);
             assert!(!render_scan_report_task(&task, &store).contains("<scan_config"));
+        }
+    }
+}
+
+// gvmd resets omitted group delays to zero on both create and modify.
+fn agent_group_delay(cmd: &ParsedCommand) -> Result<u32, &'static str> {
+    let Some(child) = cmd
+        .children
+        .iter()
+        .find(|child| child.name == "max_delay_seconds")
+    else {
+        return Ok(0);
+    };
+    child
+        .text
+        .as_deref()
+        .unwrap_or_default()
+        .trim()
+        .parse::<u32>()
+        .ok()
+        .filter(|delay| *delay <= i32::MAX as u32)
+        .ok_or("Invalid max_delay_seconds")
+}
+
+#[cfg(test)]
+mod agent_delay_tests {
+    use super::*;
+
+    #[test]
+    fn group_delay_defaults_and_bounds_follow_gvmd() {
+        let omitted = parse_command(b"<modify_agent_group/>").expect("command");
+        assert_eq!(agent_group_delay(&omitted), Ok(0));
+        for (input, expected) in [
+            ("0", Ok(0)),
+            ("30", Ok(30)),
+            ("2147483647", Ok(2147483647)),
+            ("2147483648", Err("Invalid max_delay_seconds")),
+            ("-1", Err("Invalid max_delay_seconds")),
+            ("", Err("Invalid max_delay_seconds")),
+            ("bad", Err("Invalid max_delay_seconds")),
+        ] {
+            let xml = format!("<modify_agent_group><max_delay_seconds>{input}</max_delay_seconds></modify_agent_group>");
+            let command = parse_command(xml.as_bytes()).expect("command");
+            assert_eq!(agent_group_delay(&command), expected);
         }
     }
 }

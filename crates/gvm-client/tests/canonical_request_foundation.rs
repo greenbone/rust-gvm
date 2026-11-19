@@ -452,7 +452,7 @@ async fn every_agent_group_request_is_version_gated_before_transport() {
     .await;
     assert_unsupported_22_8_request(
         &mut client,
-        ModifyAgentGroupRequest::new(group_id.clone(), "0 */5 * * *"),
+        ModifyAgentGroupRequest::new(group_id.clone(), "Group", "0 */5 * * *"),
         "modify_agent_group",
     )
     .await;

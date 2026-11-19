@@ -62,7 +62,7 @@ pub struct AgentScriptExecutorConfig {
     /// Indexer directory depth.
     pub indexer_dir_depth: Option<u32>,
     /// Scheduler cron expressions.
-    pub scheduler_cron_time: Vec<String>,
+    pub scheduler_cron_time: Vec<crate::AgentSchedule>,
 }
 
 /// Heartbeat section of an agent configuration.
@@ -167,11 +167,16 @@ impl ModifyAgentRequest {
 }
 
 impl GmpRequestCodec for ModifyAgentRequest {
+    fn validate(&self) -> Result<(), GmpRequestError> {
+        validate_config(self.config.as_ref())
+    }
+
     fn command(&self) -> Option<GmpCommand> {
         Some(GmpCommand::new("modify_agent"))
     }
 
     fn encode(&self, _version: GmpVersion) -> Result<Vec<u8>, GmpRequestError> {
+        self.validate()?;
         Ok(modify_agent_command(self).to_bytes())
     }
 }
@@ -259,11 +264,16 @@ impl ModifyAgentControlScanConfigRequest {
 }
 
 impl GmpRequestCodec for ModifyAgentControlScanConfigRequest {
+    fn validate(&self) -> Result<(), GmpRequestError> {
+        validate_config(self.agent_defaults.as_ref())
+    }
+
     fn command(&self) -> Option<GmpCommand> {
         Some(GmpCommand::new("modify_agent_control_scan_config"))
     }
 
     fn encode(&self, _version: GmpVersion) -> Result<Vec<u8>, GmpRequestError> {
+        self.validate()?;
         Ok(modify_agent_control_scan_config_command(self).to_bytes())
     }
 }
@@ -437,6 +447,15 @@ fn add_agents_element(cmd: &mut XmlCommand, agent_ids: &[EntityId]) {
     }
 }
 
+fn validate_config(config: Option<&AgentConfigOpts>) -> Result<(), GmpRequestError> {
+    if let Some(executor) = config.and_then(|config| config.agent_script_executor.as_ref()) {
+        for entry in &executor.scheduler_cron_time {
+            crate::agent_schedule::validate_delay(entry.max_delay_seconds)?;
+        }
+    }
+    Ok(())
+}
+
 fn add_agent_config(parent: &mut XmlElement, opts: &AgentConfigOpts) {
     if let Some(agent_control) = opts.agent_control.as_ref() {
         add_agent_control_config(parent.add_child("agent_control"), agent_control);
@@ -476,7 +495,9 @@ fn add_agent_script_executor_config(parent: &mut XmlElement, opts: &AgentScriptE
     if !opts.scheduler_cron_time.is_empty() {
         let scheduler = parent.add_child("scheduler_cron_time");
         for item in &opts.scheduler_cron_time {
-            scheduler.add_child_with_text("item", item);
+            let entry = scheduler.add_child("item");
+            entry.add_child_with_text("cron", &item.cron);
+            add_u32_child(entry, "max_delay_seconds", item.max_delay_seconds);
         }
     }
 }
@@ -553,7 +574,7 @@ mod tests {
         modify.config = Some(sample_config());
         assert_eq!(
             request_xml(&modify),
-            "<modify_agent><agents><agent id=\"agent-1\"/><agent id=\"agent-2\"/></agents><authorized>1</authorized><update_to_latest>0</update_to_latest><comment>managed</comment><config><agent_control><retry><attempts>3</attempts><delay_in_seconds>10</delay_in_seconds><max_jitter_in_seconds>5</max_jitter_in_seconds></retry></agent_control><agent_script_executor><bulk_size>20</bulk_size><bulk_throttle_time_in_ms>100</bulk_throttle_time_in_ms><indexer_dir_depth>4</indexer_dir_depth><scheduler_cron_time><item>0 */6 * * *</item><item>30 */6 * * *</item></scheduler_cron_time></agent_script_executor><heartbeat><interval_in_seconds>60</interval_in_seconds><miss_until_inactive>3</miss_until_inactive></heartbeat></config></modify_agent>"
+            "<modify_agent><agents><agent id=\"agent-1\"/><agent id=\"agent-2\"/></agents><authorized>1</authorized><update_to_latest>0</update_to_latest><comment>managed</comment><config><agent_control><retry><attempts>3</attempts><delay_in_seconds>10</delay_in_seconds><max_jitter_in_seconds>5</max_jitter_in_seconds></retry></agent_control><agent_script_executor><bulk_size>20</bulk_size><bulk_throttle_time_in_ms>100</bulk_throttle_time_in_ms><indexer_dir_depth>4</indexer_dir_depth><scheduler_cron_time><item><cron>0 */6 * * *</cron></item><item><cron>30 */6 * * *</cron></item></scheduler_cron_time></agent_script_executor><heartbeat><interval_in_seconds>60</interval_in_seconds><miss_until_inactive>3</miss_until_inactive></heartbeat></config></modify_agent>"
         );
         assert_eq!(
             request_xml(&DeleteAgentRequest::new(vec![id("agent-1"), id("agent-2")])),
@@ -566,7 +587,7 @@ mod tests {
         control.update_to_latest = Some(true);
         assert_eq!(
             request_xml(&control),
-            "<modify_agent_control_scan_config agent_control_id=\"scanner-1\"><config_defaults><agent_defaults><agent_control><retry><attempts>3</attempts><delay_in_seconds>10</delay_in_seconds><max_jitter_in_seconds>5</max_jitter_in_seconds></retry></agent_control><agent_script_executor><bulk_size>20</bulk_size><bulk_throttle_time_in_ms>100</bulk_throttle_time_in_ms><indexer_dir_depth>4</indexer_dir_depth><scheduler_cron_time><item>0 */6 * * *</item><item>30 */6 * * *</item></scheduler_cron_time></agent_script_executor><heartbeat><interval_in_seconds>60</interval_in_seconds><miss_until_inactive>3</miss_until_inactive></heartbeat></agent_defaults><agent_control_defaults><update_to_latest>1</update_to_latest></agent_control_defaults></config_defaults></modify_agent_control_scan_config>"
+            "<modify_agent_control_scan_config agent_control_id=\"scanner-1\"><config_defaults><agent_defaults><agent_control><retry><attempts>3</attempts><delay_in_seconds>10</delay_in_seconds><max_jitter_in_seconds>5</max_jitter_in_seconds></retry></agent_control><agent_script_executor><bulk_size>20</bulk_size><bulk_throttle_time_in_ms>100</bulk_throttle_time_in_ms><indexer_dir_depth>4</indexer_dir_depth><scheduler_cron_time><item><cron>0 */6 * * *</cron></item><item><cron>30 */6 * * *</cron></item></scheduler_cron_time></agent_script_executor><heartbeat><interval_in_seconds>60</interval_in_seconds><miss_until_inactive>3</miss_until_inactive></heartbeat></agent_defaults><agent_control_defaults><update_to_latest>1</update_to_latest></agent_control_defaults></config_defaults></modify_agent_control_scan_config>"
         );
         assert_eq!(
             request_xml(&GetAgentInstallerInstructionRequest::new(

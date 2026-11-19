@@ -174,8 +174,8 @@ pub use scan_config::{
 };
 pub use scan_report::{GetScanReportResponse, ScanReport, ScanReportResultCount};
 pub use scanner::{
-    CreateScannerResponse, DeleteScannerResponse, GetScannersResponse, ModifyScannerResponse,
-    Scanner, VerifyScannerResponse,
+    AgentControlConfigDefaults, CreateScannerResponse, DeleteScannerResponse, GetScannersResponse,
+    ModifyScannerResponse, Scanner, VerifyScannerResponse,
 };
 pub use schedule::{
     CreateScheduleResponse, DeleteScheduleResponse, GetSchedulesResponse, ModifyScheduleResponse,

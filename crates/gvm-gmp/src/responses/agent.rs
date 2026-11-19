@@ -59,7 +59,7 @@ pub struct AgentScriptExecutorConfig {
     pub bulk_size: Option<u32>,
     pub bulk_throttle_time_in_ms: Option<u32>,
     pub indexer_dir_depth: Option<u32>,
-    pub scheduler_cron_time: Vec<String>,
+    pub scheduler_cron_time: Vec<crate::AgentSchedule>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -130,7 +130,7 @@ impl Agent {
 }
 
 impl AgentConfig {
-    fn from_node(node: &XmlNode) -> Result<Self, ParseError> {
+    pub(crate) fn from_node(node: &XmlNode) -> Result<Self, ParseError> {
         Ok(Self {
             agent_control: node
                 .child("agent_control")
@@ -192,10 +192,24 @@ impl AgentScriptExecutorConfig {
                 .map(|schedule| {
                     schedule
                         .children_named("item")
-                        .map(|item| item.text.trim().to_owned())
-                        .filter(|item| !item.is_empty())
-                        .collect()
+                        .map(|item| {
+                            // Legacy text-only entries remain readable, but are never emitted.
+                            let cron = item.child("cron").map_or_else(
+                                || item.text.trim().to_owned(),
+                                |cron| cron.text.trim().to_owned(),
+                            );
+                            Ok(crate::AgentSchedule {
+                                cron,
+                                max_delay_seconds: optional_u32(
+                                    item,
+                                    "max_delay_seconds",
+                                    "max_delay_seconds",
+                                )?,
+                            })
+                        })
+                        .collect::<Result<Vec<_>, ParseError>>()
                 })
+                .transpose()?
                 .unwrap_or_default(),
         })
     }
@@ -377,9 +391,8 @@ mod tests {
                             <bulk_throttle_time_in_ms>100</bulk_throttle_time_in_ms>
                             <indexer_dir_depth>4</indexer_dir_depth>
                             <scheduler_cron_time>
-                                <item> 0 */6 * * * </item>
+                                <item><cron> 0 */6 * * * </cron><max_delay_seconds>30</max_delay_seconds></item>
                                 <item>30 */6 * * *</item>
-                                <item>   </item>
                             </scheduler_cron_time>
                         </agent_script_executor>
                         <heartbeat>
@@ -415,7 +428,13 @@ mod tests {
             .expect("executor config");
         assert_eq!(
             executor.scheduler_cron_time,
-            vec!["0 */6 * * *", "30 */6 * * *"]
+            vec![
+                crate::AgentSchedule {
+                    cron: "0 */6 * * *".into(),
+                    max_delay_seconds: Some(30)
+                },
+                "30 */6 * * *".into()
+            ]
         );
         assert_eq!(parsed.items[1].authorized, Some(false));
     }

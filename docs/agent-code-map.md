@@ -24,6 +24,7 @@ This is a fast orientation guide for coding agents. It points to ownership bound
 - `docs/target-request-gvmd-evidence.md`: pinned public gvmd schema/source evidence for the canonical target reference slice.
 - `docs/alternate-target-request-gvmd-evidence.md`: pinned gvmd evidence for canonical OCI-image and web-application target requests.
 - `docs/agent-group-request-gvmd-evidence.md`: pinned gvmd evidence for the canonical agent-group lifecycle.
+- `docs/agent-scheduler-gvmd-evidence.md`: structured scheduler entries, delay bounds, scanner defaults, and legacy response policy.
 - `docs/agent-request-gvmd-evidence.md`: pinned gvmd evidence for canonical agent operations and support-bundle decoding.
 - `docs/integration-config-request-gvmd-evidence.md`: pinned gvmd evidence for canonical integration-configuration queries, replacement validation, and clearing.
 - `docs/port-list-request-gvmd-evidence.md`: pinned gvmd evidence for canonical port-list and port-range operations, including the corrected range payload.

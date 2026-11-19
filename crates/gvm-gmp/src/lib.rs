@@ -52,3 +52,6 @@ pub use types::{
     CollectionUpdate, EntityId, EntityIdError, GmpVersion, ScalarUpdate, ServicePort,
     ServicePortError,
 };
+
+pub mod agent_schedule;
+pub use agent_schedule::AgentSchedule;

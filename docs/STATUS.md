@@ -1050,3 +1050,7 @@ Quality gate: **sbomqs ≥ 8.3** enforced in CI and release verification.
 - **Dependabot** — automated dependency updates (Cargo, pip, Docker, GitHub Actions)
 - **cargo-machete** — unused dependency detection
 - **cargo-vet / cargo-geiger / Semgrep** — supply-chain, unsafe-code, and static-analysis checks
+
+Agent schedules use structured cron/delay entries and preserve scanner Agent
+Control defaults. Agent-group delay supports validated create/modify and typed
+reads; see [scheduler evidence](agent-scheduler-gvmd-evidence.md).
