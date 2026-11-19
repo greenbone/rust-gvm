@@ -57,3 +57,10 @@
 - Added crate-local built-in agent OS/scheduler and report-application fixtures from existing source-shaped parser cases; GMP 22.8 scanner fixture adds optional Agent Control defaults while retaining ordinary scanner absence.
 - Added typed Unix-socket coverage for built-in decoding, legacy omission/empty/zero distinctions, client version gating versus direct raw fixture playback, inert support-bundle options/history, and seeded unknown VT type/opaque metadata.
 - Verification: 5 new socket tests passed; affected client + mock crate suites with both Unix-socket features passed (748 tests across 67 targets, zero failures). Strict Clippy for the new integration target, cargo fmt --all -- --check, and git diff --check passed. Tooling: /workspace/866-test-env and shared target cache. No LDAP, signing, scheduler execution/persistence, or archive transformations implemented.
+
+## 2026-11-19 — mock/docs/spec completion
+- Audited all eleven feature slices. Added built-in agent OS/nested scheduler, scanner-default, and application-count fixtures with typed socket tests, bundle flag history/inert-byte checks, and opaque VT metadata decoding.
+- Added scan/audit optional config transport regression plus direct AD rejection and explicit scenario-success coverage. Live LDAP/scheduling/signing/anonymization remain deliberate boundaries.
+- Integrated both #861/#866 review corrections through all six upper branches without rewriting published history; exact branch heads saved in review-restack.json.
+- Full combined workspace verification with serde and socket tests: 1,634 passed across 128 targets, zero failures, one pre-existing ignored doctest. Strict socket-enabled workspace/all-target Clippy, formatting and diff checks passed.
+- Documentation matrix links APIs, feature evidence and mock limits; downstream REST contract supplement remains explicitly planned, not an implemented OpenAPI claim.

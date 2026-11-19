@@ -58,6 +58,8 @@ inert mock support bundles to test real privacy or cryptography guarantees.
 
 - [Sensor, target, result and report conformance suites](../crates/gvm-mock-server/tests/)
 - [Typed mock/client facade coverage](../crates/gvm-client/tests/typed_facade_coverage.rs)
+- [Built-in agent/scanner/application fixtures and typed decoding](../crates/gvm-client/tests/builtin_inventory_fixtures.rs)
+- [Scan/audit configuration references over sockets](../crates/gvm-client/tests/mock_report_config.rs)
 - [Versioned agent/bundle calls](../crates/gvm-client/tests/versioned_client.rs)
 - [Inventory discovery/error/redaction tests](../crates/gvm-client/tests/agent_inventory_token.rs)
 - [Structured report config parser tests](../crates/gvm-gmp/tests/report_scan_config.rs)
