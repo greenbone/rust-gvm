@@ -362,6 +362,20 @@ async fn stateful_modify_agent_group_clears_non_empty_membership() {
     assert!(before.contains("<agent id=\"agent-2\"><name></name></agent>"));
 
     assert!(before.contains("<max_delay_seconds>30</max_delay_seconds>"));
+    for name in ["", "<name/>", "<name></name>"] {
+        let rejected = send_recv(
+            &mut stream,
+            format!("<modify_agent_group agent_group_id=\"{group_id}\">{name}<scheduler_cron_time>changed</scheduler_cron_time><max_delay_seconds>60</max_delay_seconds><comment>Must not persist</comment><agents/></modify_agent_group>").as_bytes(),
+        ).await;
+        assert_eq!(rejected.status_code(), Some(400));
+        assert!(rejected.as_str().unwrap().contains("Missing or empty"));
+        let unchanged = send_recv(
+            &mut stream,
+            format!("<get_agent_groups agent_group_id=\"{group_id}\"/>").as_bytes(),
+        )
+        .await;
+        assert_eq!(unchanged.as_str().unwrap(), before);
+    }
     let rejected = send_recv(
         &mut stream,
         format!("<modify_agent_group agent_group_id=\"{group_id}\"><name>Must not persist</name><max_delay_seconds>2147483648</max_delay_seconds></modify_agent_group>").as_bytes(),
@@ -379,7 +393,7 @@ async fn stateful_modify_agent_group_clears_non_empty_membership() {
     let modified = send_recv(
         &mut stream,
         format!(
-            "<modify_agent_group agent_group_id=\"{group_id}\"><scheduler_cron_time>0 */10 * * *</scheduler_cron_time><agents/></modify_agent_group>"
+            "<modify_agent_group agent_group_id=\"{group_id}\"><scheduler_cron_time>0 */10 * * *</scheduler_cron_time><name>Group</name><agents/></modify_agent_group>"
         )
         .as_bytes(),
     )

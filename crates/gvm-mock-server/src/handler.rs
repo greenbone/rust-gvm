@@ -2524,6 +2524,9 @@ impl SessionHandler {
         let new_closed_note = parse_element_text(raw_xml, "closed_note");
         let new_scheduler_cron_time = parse_element_text(raw_xml, "scheduler_cron_time");
         let new_agent_group_delay = if resource_type == "agent_group" {
+            if cmd.child_text("name").is_none_or(str::is_empty) {
+                return error_response(&cmd.name, 400, "Missing or empty <name>");
+            }
             match agent_group_delay(cmd) {
                 Ok(delay) => Some(delay),
                 Err(error) => return error_response(&cmd.name, 400, error),
