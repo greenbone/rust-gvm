@@ -619,3 +619,50 @@ async fn equal_sort_keys_use_id_ties_across_insertion_orders_and_pages() {
         server.shutdown().await;
     }
 }
+
+#[tokio::test]
+async fn protected_report_scope_is_independent_of_boolean_filters_and_pagination() {
+    let (server, _) = seeded_server().await;
+    let mut stream = connect_and_auth(&server).await;
+    // Ordinary report_id is a boolean predicate: the second OR arm escapes it.
+    let ordinary = send_recv(&mut stream, format!(
+        "<get_results filter=\"report_id={REPORT_1} AND severity&gt;7 OR severity&lt;6\" get_counts=\"1\"/>"
+    )).await;
+    assert!(text(&ordinary).contains(&RESULT_1.to_string()));
+    assert!(text(&ordinary).contains(&RESULT_2.to_string()));
+    assert!(text(&ordinary).contains("<filtered>2</filtered>"));
+
+    for predicates in [
+        "severity&gt;7 OR severity&lt;6",
+        "severity&gt;7 severity&lt;6",
+        "severity&gt;7 AND severity&lt;9",
+        "severity&gt;99 OR severity&lt;6",
+    ] {
+        let response = send_recv(&mut stream, format!(
+            "<get_results filter=\"{predicates} _and_report_id={REPORT_1} first=1 rows=1\" get_counts=\"1\"/>"
+        )).await;
+        let response = text(&response);
+        assert!(!response.contains(&RESULT_2.to_string()), "{response}");
+        assert!(
+            !response.contains(&RESULT_LOW_QOD.to_string()),
+            "{response}"
+        );
+        if predicates.starts_with("severity&gt;99") {
+            assert!(!response.contains(&RESULT_1.to_string()));
+            assert!(response.contains("<filtered>0</filtered>"));
+        } else {
+            assert!(response.contains(&RESULT_1.to_string()));
+            assert!(response.contains("<filtered>1</filtered>"));
+            assert!(response.contains("<page>1</page>"));
+        }
+    }
+    let second_page = send_recv(&mut stream, format!(
+        "<get_results filter=\"severity&gt;7 OR severity&lt;6 _and_report_id={REPORT_1} first=2 rows=1\" get_counts=\"1\"/>"
+    )).await;
+    let second_page = text(&second_page);
+    assert!(!second_page.contains(&RESULT_1.to_string()));
+    assert!(!second_page.contains(&RESULT_2.to_string()));
+    assert!(second_page.contains("<filtered>1</filtered>"));
+    assert!(second_page.contains("<page>0</page>"));
+    server.shutdown().await;
+}

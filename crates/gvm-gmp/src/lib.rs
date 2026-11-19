@@ -33,7 +33,10 @@ pub use execution::{
     GmpStreamingResponse,
 };
 /// Re-exported gvmd filter helpers.
-pub use filtering::{FilterFragment, FilterFragmentError, PaginatedFilter, Pagination};
+pub use filtering::{
+    compose_report_results_filter, FilterFragment, FilterFragmentError, PaginatedFilter,
+    Pagination, ReportResultsFilterError,
+};
 /// Re-exported semantic GMP server-error classification.
 pub use responses::GmpServerErrorKind;
 /// Re-exported typed schedule values.
