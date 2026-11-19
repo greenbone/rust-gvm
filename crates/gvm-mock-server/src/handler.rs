@@ -1859,6 +1859,11 @@ impl SessionHandler {
 
         // Target-specific
         if resource_type == "target" {
+            let source = match target_source_update(cmd) {
+                Ok(source) => source.unwrap_or("manual"),
+                Err(message) => return error_response(&cmd.name, 400, message),
+            };
+            resource.set_attr("source", source);
             let asset_hosts_filter = cmd.child_attr("asset_hosts", "filter");
             let hosts = if let Some(filter) = asset_hosts_filter {
                 match resolve_asset_target_hosts(store, filter) {
@@ -2445,6 +2450,14 @@ impl SessionHandler {
                 }
             }
         }
+        let new_target_source = if resource_type == "target" {
+            match target_source_update(cmd) {
+                Ok(source) => source,
+                Err(message) => return error_response(&cmd.name, 400, message),
+            }
+        } else {
+            None
+        };
         let new_target_alive_test = if resource_type == "target" {
             match target_alive_test_update(cmd) {
                 Ok(update) => update,
@@ -2844,6 +2857,9 @@ impl SessionHandler {
             }
         }
         let update_resource = |r: &mut Resource| {
+            if let Some(source) = new_target_source {
+                r.set_attr("source", source);
+            }
             if matches!(resource_type, "note" | "override") {
                 r.name.clone_from(
                     new_text
@@ -6117,6 +6133,16 @@ fn singularize_resource_type(plural: &str) -> &str {
 // gvmd manage.h: OSP, OpenVASD and Agent Controller sensors.
 fn is_sensor_scanner_type(scanner_type: Option<&str>) -> bool {
     matches!(scanner_type, Some("5" | "8" | "9"))
+}
+
+fn target_source_update(cmd: &ParsedCommand) -> Result<Option<&str>, &'static str> {
+    match cmd.children.iter().find(|child| child.name == "source") {
+        None => Ok(None),
+        Some(child) if matches!(child.text.as_deref(), Some("manual" | "active_directory")) => {
+            Ok(child.text.as_deref())
+        }
+        Some(_) => Err("Invalid target source"),
+    }
 }
 
 #[cfg(test)]
