@@ -567,6 +567,7 @@ facade	crates/gvm-client/src/typed/security.rs	get_vulnerabilities	canonical-req
 facade	crates/gvm-client/src/typed/security.rs	get_vulnerability	canonical-request	#648 request-by-value facade delegates unchanged to execute and preserves the canonical request response association.
 facade	crates/gvm-client/src/typed/security.rs	modify_credential	retained-construction	Retained for discoverability; accepts the canonical ModifyCredentialRequest unchanged.
 facade	crates/gvm-client/src/typed/security.rs	modify_credential_store_credential	retained-construction	Retained for discoverability; accepts the canonical ModifyCredentialStoreCredentialRequest unchanged.
+facade	crates/gvm-client/src/typed/security.rs	verify_active_directory_credential	retained-construction	Retained for discoverability; accepts the canonical VerifyActiveDirectoryCredentialRequest unchanged.
 facade	crates/gvm-client/src/typed/security.rs	verify_credential_store	retained-construction	Retained for discoverability; accepts the canonical VerifyCredentialStoreRequest unchanged.
 facade	crates/gvm-client/src/typed/system.rs	describe_auth	retained-construction	Retained for discoverability by #663; accepts the canonical request unchanged and delegates only to execute.
 facade	crates/gvm-client/src/typed/system.rs	get_aggregates	retained-construction	Retained for discoverability by #663; accepts the canonical request unchanged and delegates only to execute.
@@ -777,6 +778,7 @@ request	crates/gvm-gmp/src/commands/credentials.rs	GetCredentialsRequest	canonic
 request	crates/gvm-gmp/src/commands/credentials.rs	ModifyCredentialRequest	canonical-request	Complete secret-bearing modify input with final-value validation, direct encoding, and typed response.
 request	crates/gvm-gmp/src/commands/credentials.rs	ModifyCredentialStoreCredentialRequest	canonical-request	Complete store-backed modify input with semantic alias metadata, validation, secret redaction, and direct encoding.
 request	crates/gvm-gmp/src/commands/credentials.rs	ModifyCredentialStoreRequest	canonical-request	Complete preference-bearing store modify input with validation, secret redaction, direct encoding, and typed response.
+request	crates/gvm-gmp/src/commands/credentials.rs	VerifyActiveDirectoryCredentialRequest	canonical-request	Complete mutually exclusive saved or inline verification request with direct encoding.
 request	crates/gvm-gmp/src/commands/credentials.rs	VerifyCredentialStoreRequest	canonical-request	Complete verify input with direct metadata/encoding and typed response.
 request	crates/gvm-gmp/src/commands/features.rs	GetFeaturesRequest	canonical-request	Complete #663 request owns all supported discovery input, validation, command metadata, direct encoding, and its typed response.
 request	crates/gvm-gmp/src/commands/feed.rs	GetFeedRequest	canonical-request	Complete #663 request owns all supported discovery input, validation, command metadata, direct encoding, and its typed response.

@@ -108,6 +108,8 @@ impl GmpRequest for GetCredentialRequest {
 /// Semantic request for creating a credential.
 #[derive(Clone, Default)]
 pub struct CreateCredentialRequest {
+    /// AD connector fields; requires explicit `ActiveDirectory` type.
+    pub active_directory: Option<ActiveDirectoryCredentialFields>,
     /// Resource name.
     pub name: String,
     /// Optional comment text.
@@ -162,6 +164,7 @@ impl CreateCredentialRequest {
 impl fmt::Debug for CreateCredentialRequest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("CreateCredentialRequest")
+            .field("active_directory", &self.active_directory)
             .field("name", &self.name)
             .field("comment", &self.comment)
             .field("credential_type", &self.credential_type)
@@ -238,6 +241,8 @@ impl GmpRequest for CloneCredentialRequest {
 /// Semantic request for modifying a credential.
 #[derive(Clone)]
 pub struct ModifyCredentialRequest {
+    /// Partial AD connector replacement; omitted fields remain unchanged.
+    pub active_directory: Option<ActiveDirectoryCredentialFields>,
     /// Credential identifier to modify.
     pub credential_id: EntityId,
     /// Optional replacement credential name.
@@ -296,6 +301,7 @@ impl ModifyCredentialRequest {
             kdc: None,
             kdcs: Vec::new(),
             realm: None,
+            active_directory: None,
         }
     }
 }
@@ -303,6 +309,7 @@ impl ModifyCredentialRequest {
 impl fmt::Debug for ModifyCredentialRequest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ModifyCredentialRequest")
+            .field("active_directory", &self.active_directory)
             .field("credential_id", &self.credential_id)
             .field("name", &self.name)
             .field("comment", &self.comment)
@@ -326,6 +333,9 @@ impl fmt::Debug for ModifyCredentialRequest {
 
 impl GmpRequestCodec for ModifyCredentialRequest {
     fn validate(&self) -> Result<(), GmpRequestError> {
+        if let Some(ad) = &self.active_directory {
+            ad.validate(false)?;
+        }
         if matches!(self.login.as_deref(), Some("")) {
             return Err(GmpRequestError::invalid_field("login", "must not be empty"));
         }
@@ -833,7 +843,22 @@ fn validate_create_credential(request: &CreateCredentialRequest) -> Result<(), G
         ));
     }
 
+    if request.active_directory.is_some()
+        && request.credential_type != Some(CredentialType::ActiveDirectory)
+    {
+        return Err(GmpRequestError::invalid_field(
+            "active_directory",
+            "requires ActiveDirectory credential type",
+        ));
+    }
     match request.credential_type {
+        Some(CredentialType::ActiveDirectory) => {
+            request
+                .active_directory
+                .as_ref()
+                .ok_or_else(|| GmpRequestError::invalid_field("active_directory", "is required"))?
+                .validate(true)?;
+        }
         Some(CredentialType::ClientCertificate) => {
             require_present(&request.private_key, "private_key")?;
             require_present(&request.certificate, "certificate")?;
@@ -908,6 +933,9 @@ fn create_credential_command(request: &CreateCredentialRequest) -> XmlCommand {
         cmd.add_element_with_text("type", credential_type.as_gmp_str());
     }
     add_credential_values(&mut cmd, CredentialValues::from(request));
+    if let Some(ad) = &request.active_directory {
+        ad.encode_into(&mut cmd);
+    }
     cmd
 }
 
@@ -921,6 +949,9 @@ fn modify_credential_command(request: &ModifyCredentialRequest) -> XmlCommand {
     add_text_element(&mut cmd, "name", request.name.as_deref());
     add_text_element(&mut cmd, "comment", request.comment.as_deref());
     add_credential_values(&mut cmd, CredentialValues::from(request));
+    if let Some(ad) = &request.active_directory {
+        ad.encode_into(&mut cmd);
+    }
     cmd
 }
 
@@ -1161,4 +1192,161 @@ fn add_kerberos_values(
         }
     }
     add_text_element(cmd, "realm", realm);
+}
+
+/// TLS transport for an Active Directory connector. Plain LDAP is not supported.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum ActiveDirectoryTlsMode {
+    /// Implicit TLS (server default port 636).
+    Ldaps,
+    /// LDAP upgraded to TLS (server default port 389).
+    StartTls,
+}
+
+impl ActiveDirectoryTlsMode {
+    /// Wire representation.
+    #[must_use]
+    pub const fn as_gmp_str(self) -> &'static str {
+        match self {
+            Self::Ldaps => "ldaps",
+            Self::StartTls => "starttls",
+        }
+    }
+}
+
+/// AD connector fields shared by create, partial modify, and inline verification.
+///
+/// Omitted ports are not filled in locally. Bind passwords are write-only and
+/// redacted from Debug; destination, certificate and DN policy remain server-side.
+#[derive(Clone, Default)]
+pub struct ActiveDirectoryCredentialFields {
+    /// Directory hostname or address.
+    pub host: Option<String>,
+    /// Explicit port; omission preserves the server TLS-mode default.
+    pub port: Option<u16>,
+    /// Clear a stored port on modify, restoring the server TLS-mode default.
+    pub clear_port: bool,
+    /// Bind distinguished name.
+    pub bind_dn: Option<String>,
+    /// Write-only bind secret.
+    pub bind_password: Option<String>,
+    /// Directory search root.
+    pub base_dn: Option<String>,
+    /// Secure transport mode.
+    pub tls_mode: Option<ActiveDirectoryTlsMode>,
+    /// Optional PEM CA certificates.
+    pub ca_certificate: Option<String>,
+}
+
+impl fmt::Debug for ActiveDirectoryCredentialFields {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ActiveDirectoryCredentialFields")
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .field("clear_port", &self.clear_port)
+            .field("bind_dn", &self.bind_dn)
+            .field("bind_password", &redacted(&self.bind_password))
+            .field("base_dn", &self.base_dn)
+            .field("tls_mode", &self.tls_mode)
+            .field("ca_certificate", &present(&self.ca_certificate))
+            .finish()
+    }
+}
+
+impl ActiveDirectoryCredentialFields {
+    fn validate(&self, complete: bool) -> Result<(), GmpRequestError> {
+        if self.clear_port && (complete || self.port.is_some()) {
+            return Err(GmpRequestError::invalid_field(
+                "clear_port",
+                "only valid on modify without an explicit port",
+            ));
+        }
+        for (name, value) in [
+            ("host", &self.host),
+            ("bind_dn", &self.bind_dn),
+            ("base_dn", &self.base_dn),
+            ("bind_password", &self.bind_password),
+        ] {
+            if value.as_deref() == Some("") {
+                return Err(GmpRequestError::invalid_field(name, "must not be empty"));
+            }
+        }
+        if self.port == Some(0) {
+            return Err(GmpRequestError::invalid_field(
+                "port",
+                "must be between 1 and 65535",
+            ));
+        }
+        if complete {
+            require_present(&self.host, "host")?;
+            require_present(&self.bind_dn, "bind_dn")?;
+            require_present(&self.bind_password, "bind_password")?;
+            require_present(&self.base_dn, "base_dn")?;
+            if self.tls_mode.is_none() {
+                return Err(GmpRequestError::invalid_field("tls_mode", "is required"));
+            }
+        }
+        Ok(())
+    }
+
+    fn encode_into(&self, cmd: &mut XmlCommand) {
+        add_text_element(cmd, "host", self.host.as_deref());
+        if self.clear_port {
+            cmd.add_element("port");
+        }
+        if let Some(port) = self.port {
+            cmd.add_element_with_text("port", &port.to_string());
+        }
+        add_text_element(cmd, "bind_dn", self.bind_dn.as_deref());
+        add_text_element(cmd, "bind_password", self.bind_password.as_deref());
+        add_text_element(cmd, "base_dn", self.base_dn.as_deref());
+        if let Some(mode) = self.tls_mode {
+            cmd.add_element_with_text("tls_mode", mode.as_gmp_str());
+        }
+        if let Some(ca) = &self.ca_certificate {
+            cmd.add_element_with_text("ca_certificate", ca);
+        }
+    }
+}
+
+/// Mutually exclusive saved and inline AD verification forms.
+///
+/// Requires positive XML-help discovery and the server's explicit
+/// `verify_active_directory_credential` permission. Discovery is not authorization.
+#[derive(Debug, Clone)]
+pub enum VerifyActiveDirectoryCredentialRequest {
+    /// Verify a saved AD credential.
+    Saved {
+        /// Saved AD credential identifier.
+        credential_id: EntityId,
+    },
+    /// Verify connection fields without persisting a credential.
+    Inline(ActiveDirectoryCredentialFields),
+}
+
+impl GmpRequestCodec for VerifyActiveDirectoryCredentialRequest {
+    fn validate(&self) -> Result<(), GmpRequestError> {
+        match self {
+            Self::Saved { .. } => Ok(()),
+            Self::Inline(fields) => fields.validate(true),
+        }
+    }
+    fn command(&self) -> Option<GmpCommand> {
+        Some(GmpCommand::new("verify_active_directory_credential"))
+    }
+    fn encode(&self, _version: GmpVersion) -> Result<Vec<u8>, GmpRequestError> {
+        self.validate()?;
+        let mut cmd = XmlCommand::new("verify_active_directory_credential");
+        match self {
+            Self::Saved { credential_id } => {
+                cmd.set_attribute("credential_id", credential_id.as_str());
+            }
+            Self::Inline(fields) => fields.encode_into(&mut cmd),
+        }
+        Ok(cmd.to_bytes())
+    }
+}
+impl GmpRequest for VerifyActiveDirectoryCredentialRequest {
+    type Response = crate::responses::VerifyActiveDirectoryCredentialResponse;
 }

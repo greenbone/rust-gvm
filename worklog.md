@@ -19,6 +19,22 @@
 - #855 cherry-picked and reviewed: application counts/threat preserve server severity; independent malformed/absent/empty/zero fixtures and client/mock drill-down test passed. Full final-stack workspace run underway.
 - #851 full CI passed at 8668795 (run 44398663891), including all features, stable/MSRV, strict clippy, coverage, documentation and python-gvm integration. Upper PR CI dispatched explicitly because pull_request branch filters exclude stacked bases.
 - Final combined local verification: `cargo test --workspace --features gvm-client/unix-socket-tests` passed 1,585 tests including doctests (one pre-existing ignored doctest); all 121 target summaries passed. Strict clippy found one test-only missing semicolon in #854; repaired in that layer and rebased #855. Strict workspace all-targets clippy and fmt now pass. No behavior changed by the lint repair.
+# AD stack worklog
+
+- 2026-11-18: Read #847/#848 and repository guidance; source evidence from gvmd origin/main. Isolated worktree from 125e16f. GitHub skill used, identity hive-bumblebee.
+- #847 credential/verification layer in progress; #848 new-file discovery layer delegated independently. Commits and PRs remain sequential.
+- No local Rust initially; parent arranging workspace-local toolchain. No host installs.
+
+- #847 implementation complete: typed AD credentials/metadata, mutually exclusive verification, discovery gating, redaction, and bounded mock rejection.
+- Focused checks passed: AD protocol (4), existing credentials (9), enums (31), AD facade integration (1). Full workspace unit/integration tests passed with unix-socket-tests; initial doctest run hit /tmp noexec, then all workspace doctests passed with TMPDIR under target and workspace-local rust-lld flags.
+- Strict Clippy with unix-socket-tests passed, as did formatting/diff checks. Bare default all-target Clippy trips pre-existing cfg-disabled test-crate missing-doc warnings; enabling integration tests resolves them. All-feature Clippy blocked locally by absent native cc; CI required for native TLS/SSH dependencies.
+
+## 2026-11-19 — PR #866 review
+- Review at f832a831: AD partial updates containing only host, port, clear-port or CA bypass built-in mock rejection.
+- Clean review worktree; adding table-driven typed-client coverage for all eight AD update shapes across Echo/Fixture/Stateful. Stateful test seeds a saved AD credential, authenticates, and checks complete stored snapshots remain unchanged despite accompanying ordinary-field mutations.
+- Tooling uses workspace-local Rust/linker/native libraries and existing AD target cache; no host changes.
+- Confirmed regression fails on original code with false 200 OK, then passes for all 24 mode/update combinations after including host/port/CA children.
+- Full workspace socket-enabled + serde verification: 1,614 tests passed across 124 targets, zero failures, one pre-existing ignored doctest. Strict workspace/all-target Clippy passes after extracting the test case table; formatting/diff checks pass.
 
 ## 2026-11-19 — PR #861 review
 - Confirmed pinned gvmd requires nonempty modify-agent-group name before processing delay.

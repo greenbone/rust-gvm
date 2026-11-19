@@ -34,8 +34,8 @@ validation remains a separate follow-up.
 Release `v0.7.0` completed the SemVer-incompatible migration from the v0.6
 request surface. Issue #602 replaced temporary parallel
 options/builders/facade inputs with canonical complete request values, and
-issue #678 completed the final surface audit, now extended to 1,041 classified rows, zero
-transitional entries, and 268 typed facades. Current `main` is the
+issue #678 completed the final surface audit, now extended to 1,043 classified rows, zero
+transitional entries, and 269 typed facades. Current `main` is the
 post-`v0.7.0` Technology Preview line. See the
 [convergence audit](canonical-request-convergence-audit.md) and
 [v0.7.0 migration guide](v0.7.0-migration.md).
@@ -118,3 +118,11 @@ remain documented in [streaming-responses.md](streaming-responses.md).
    and #417.
 5. Expand real-gvmd conformance and python-gvm migration documentation as new
    protocol differences are discovered.
+
+## Active Directory credentials
+
+Typed AD credentials and verification are supported with build-aware XML-help
+discovery, not a guessed GMP version gate. The server retains authorization and
+destination-policy decisions; bind passwords remain write-only/redacted. Built-in
+mocks reject live AD operations; explicit fixtures/scenarios model outcomes. See
+[credential evidence](active-directory-credential-gvmd-evidence.md).

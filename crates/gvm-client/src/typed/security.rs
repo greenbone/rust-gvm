@@ -28,6 +28,20 @@ use gvm_gmp::responses::{
 };
 
 impl<C: GvmConnection + Send> GmpClient<C> {
+    /// Verify saved or inline AD connection settings without persisting them.
+    ///
+    /// Requires positive XML-help discovery. AD create/copy/modify also require
+    /// the server's explicit verification permission; discovery is not permission.
+    ///
+    /// # Errors
+    /// Returns discovery, validation, transport, or unmodified server errors.
+    pub async fn verify_active_directory_credential(
+        &mut self,
+        request: gvm_gmp::commands::credentials::VerifyActiveDirectoryCredentialRequest,
+    ) -> Result<gvm_gmp::responses::VerifyActiveDirectoryCredentialResponse, GvmError> {
+        self.execute(request).await
+    }
+
     // ── Feeds ─────────────────────────────────────────────────────────────────
 
     /// Send a `get_feeds` request and return a typed [`GetFeedsResponse`].
