@@ -3979,7 +3979,11 @@ async fn distinct_registry_and_semantic_version_gates_fail_before_transport_send
         "22.8"
     );
     assert_unsupported_command!(
-        v227_client.execute(ModifyAgentGroupRequest::new(id("group-1"), "0 */5 * * *")),
+        v227_client.execute(ModifyAgentGroupRequest::new(
+            id("group-1"),
+            "Group",
+            "0 */5 * * *"
+        )),
         "modify_agent_group",
         GmpVersion(22, 7),
         "22.8"
@@ -4307,4 +4311,134 @@ async fn ad_discovery_facade_preserves_collection_and_server_policy() {
     ));
     assert!(server.command_history().is_empty());
     server.shutdown().await;
+}
+
+fn partial_ad_update_cases() -> [(
+    &'static str,
+    gvm_gmp::commands::credentials::ActiveDirectoryCredentialFields,
+); 8] {
+    use gvm_gmp::commands::credentials::{ActiveDirectoryCredentialFields, ActiveDirectoryTlsMode};
+    [
+        (
+            "host",
+            ActiveDirectoryCredentialFields {
+                host: Some("dc.example".into()),
+                ..Default::default()
+            },
+        ),
+        (
+            "port",
+            ActiveDirectoryCredentialFields {
+                port: Some(636),
+                ..Default::default()
+            },
+        ),
+        (
+            "clear_port",
+            ActiveDirectoryCredentialFields {
+                clear_port: true,
+                ..Default::default()
+            },
+        ),
+        (
+            "ca_certificate",
+            ActiveDirectoryCredentialFields {
+                ca_certificate: Some("test CA".into()),
+                ..Default::default()
+            },
+        ),
+        (
+            "bind_dn",
+            ActiveDirectoryCredentialFields {
+                bind_dn: Some("CN=svc".into()),
+                ..Default::default()
+            },
+        ),
+        (
+            "bind_password",
+            ActiveDirectoryCredentialFields {
+                bind_password: Some("test-secret".into()),
+                ..Default::default()
+            },
+        ),
+        (
+            "base_dn",
+            ActiveDirectoryCredentialFields {
+                base_dn: Some("DC=example".into()),
+                ..Default::default()
+            },
+        ),
+        (
+            "tls_mode",
+            ActiveDirectoryCredentialFields {
+                tls_mode: Some(ActiveDirectoryTlsMode::StartTls),
+                ..Default::default()
+            },
+        ),
+    ]
+}
+
+#[tokio::test]
+async fn built_in_mock_rejects_partial_ad_modifications_before_mutation() {
+    use gvm_gmp::commands::authentication::AuthenticateRequest;
+    use gvm_mock_server::store::{Resource, ResourceStore};
+    use std::sync::{Arc, Mutex};
+
+    for mode in [ServerMode::Echo, ServerMode::Fixture, ServerMode::Stateful] {
+        let mut credential = Resource::new("credential", "original");
+        credential.comment = "original comment".into();
+        credential.set_attr("type", "ad");
+        credential.set_attr("host", "original.example");
+        credential.set_attr("port", "389");
+        credential.set_attr("bind_password", "original-secret");
+        let id = credential.id;
+        let store_slot = Arc::new(Mutex::new(None::<ResourceStore>));
+        let seed_slot = Arc::clone(&store_slot);
+        let mut builder = MockGmpServer::builder().mode(mode);
+        if mode == ServerMode::Stateful {
+            builder = builder.seed(move |store| {
+                store.create(credential);
+                *seed_slot.lock().expect("store slot") = Some(store.clone());
+            });
+        }
+        let server = builder.unix_socket_auto().build().await.expect("server");
+        let mut client = client(&server).await;
+        if mode == ServerMode::Stateful {
+            client
+                .authenticate(AuthenticateRequest::new("admin", "admin"))
+                .await
+                .expect("authenticate");
+        }
+        let store = store_slot.lock().expect("store slot").clone();
+        let before = store
+            .as_ref()
+            .map(|store| format!("{:?}", store.get(&id).expect("seeded credential")));
+        for (case, fields) in partial_ad_update_cases() {
+            let mut request =
+                ModifyCredentialRequest::new(EntityId::new(id.to_string()).expect("valid UUID"));
+            request.active_directory = Some(fields);
+            // Ordinary fields would mutate successfully if the AD guard were bypassed.
+            request.name = Some("must not change".into());
+            request.comment = Some("must not change".into());
+            let error = client.modify_credential(request).await.expect_err(case);
+            assert!(
+                error
+                    .to_string()
+                    .contains("Active Directory integration unavailable"),
+                "{mode:?}/{case}: {error}"
+            );
+            assert!(!error.to_string().contains("test-secret"));
+            if let Some(store) = &store {
+                assert_eq!(
+                    Some(format!(
+                        "{:?}",
+                        store.get(&id).expect("credential retained")
+                    )),
+                    before,
+                    "{mode:?}/{case}"
+                );
+            }
+        }
+        server.shutdown().await;
+    }
 }
