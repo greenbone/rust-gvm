@@ -52,3 +52,13 @@ semantics; typed client tests exercise create and modify round trips. The mock
 does not execute schedules, synchronize an Agent Controller, or simulate jitter.
 Scanner/agent schedule response tests are source-shaped fixtures, not live-gvmd
 qualification. Existing GMP 22.8 capability gates remain unchanged.
+
+Built-in Fixture mode includes agent OS metadata (populated, absent, and empty)
+plus nested scheduler entries, and a GMP 22.8 scanner response with optional
+Agent Control defaults. These are static projections, not scheduler execution
+or persisted configuration. Typed clients still gate `get_agents` at GMP 22.8;
+direct socket fixture playback follows the existing ungated fixture policy.
+The built-in report-application summary likewise preserves absent IDs and
+independent host/occurrence counts without computing inventory. Stateful
+support-bundle responses always return fixed inert `hello-mock` bytes:
+encryption/anonymization options are recorded, not applied to an archive.

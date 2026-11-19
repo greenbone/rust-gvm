@@ -65,6 +65,21 @@ impl FixtureStore {
     }
 
     fn load_builtins(&mut self) {
+        // Static source-shaped projections, not scheduler execution or live inventory.
+        // Like other fixture responses, direct raw requests are not version-gated;
+        // normal typed client command gates remain authoritative.
+        self.fixtures.insert(
+            "get_agents".into(),
+            include_str!("fixtures/agents.xml").into(),
+        );
+        self.fixtures.insert(
+            "get_report_applications".into(),
+            include_str!("fixtures/report_applications.xml").into(),
+        );
+        self.fixtures.insert(
+            "22.8/get_scanners".into(),
+            include_str!("fixtures/scanners.xml").into(),
+        );
         self.fixtures.insert(
             "get_agent_inventory_token".to_string(),
             agent_inventory_token_response(),

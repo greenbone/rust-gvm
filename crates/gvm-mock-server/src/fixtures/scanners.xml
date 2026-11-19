@@ -1,0 +1,5 @@
+<get_scanners_response status="200" status_text="OK">
+  <scanner id="{{uuid}}"><name>OpenVAS Default</name><type>2</type><creation_time>{{now}}</creation_time><modification_time>{{now}}</modification_time></scanner>
+  <scanner id="{{uuid}}"><name>Agent Control</name><type>9</type><agent_control_config_defaults><agent_defaults><agent_script_executor><scheduler_cron_time is_list="1"><item><cron>0 */6 * * *</cron><max_delay_seconds>30</max_delay_seconds></item><item><cron>15 * * * *</cron><max_delay_seconds>0</max_delay_seconds></item><item>legacy cron</item><item><cron/></item></scheduler_cron_time></agent_script_executor></agent_defaults><agent_control_defaults><update_to_latest>1</update_to_latest></agent_control_defaults></agent_control_config_defaults></scanner>
+  <scanner_count>2<filtered>2</filtered></scanner_count>
+</get_scanners_response>

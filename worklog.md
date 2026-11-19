@@ -44,3 +44,16 @@
 - Stateful mock rejects nameless updates before mutation; regression compares complete response before/after rejected schedule, delay, comment, and membership changes.
 - Optional serde accepts legacy cron strings and current objects while retaining structured serialization, with malformed-input and round-trip tests.
 - Verification: workspace tests with serde and both Unix-socket features passed 1,599 tests across 122 targets (zero failures, one pre-existing ignored doctest). Strict workspace/all-target Clippy with those features passed. Formatting and diff checks passed. No live-server qualification.
+
+## 2026-11-19 — PR #866 review
+- Review at f832a831: AD partial updates containing only host, port, clear-port or CA bypass built-in mock rejection.
+- Clean review worktree; adding table-driven typed-client coverage for all eight AD update shapes across Echo/Fixture/Stateful. Stateful test seeds a saved AD credential, authenticates, and checks complete stored snapshots remain unchanged despite accompanying ordinary-field mutations.
+- Tooling uses workspace-local Rust/linker/native libraries and existing AD target cache; no host changes.
+- Confirmed regression fails on original code with false 200 OK, then passes for all 24 mode/update combinations after including host/port/CA children.
+- Full workspace socket-enabled + serde verification: 1,614 tests passed across 124 targets, zero failures, one pre-existing ignored doctest. Strict workspace/all-target Clippy passes after extracting the test case table; formatting/diff checks pass.
+
+## 2026-11-19 — bounded built-in fixture completion
+- Isolated branch/worktree from 2ee5789; parent checkout untouched.
+- Added crate-local built-in agent OS/scheduler and report-application fixtures from existing source-shaped parser cases; GMP 22.8 scanner fixture adds optional Agent Control defaults while retaining ordinary scanner absence.
+- Added typed Unix-socket coverage for built-in decoding, legacy omission/empty/zero distinctions, client version gating versus direct raw fixture playback, inert support-bundle options/history, and seeded unknown VT type/opaque metadata.
+- Verification: 5 new socket tests passed; affected client + mock crate suites with both Unix-socket features passed (748 tests across 67 targets, zero failures). Strict Clippy for the new integration target, cargo fmt --all -- --check, and git diff --check passed. Tooling: /workspace/866-test-env and shared target cache. No LDAP, signing, scheduler execution/persistence, or archive transformations implemented.
