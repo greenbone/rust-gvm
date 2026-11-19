@@ -13,3 +13,10 @@
 - Native Rust toolchain pending workspace provisioning; no host packages installed.
 - #851 local verification: workspace unit/integration tests with `gvm-client/unix-socket-tests` passed (including group round trips and rollback); initial doc test failed because default temp is noexec. Re-ran `cargo test --workspace --doc` with workspace TMPDIR and linker flags: passed. Strict workspace all-targets clippy with socket-test features passed; cargo fmt/diff checks passed. GMP group parser recheck passed after final assertions.
 - Tooling: sourced /workspace/.cache/rust-tooling/env; RUSTFLAGS/RUSTDOCFLAGS `-C linker=rust-lld -L native=/workspace/.cache/rust-tooling/native-libs`, TMPDIR `/workspace/.cache/rust-tooling/tmp`. No host changes.
+
+## 2026-11-19 — PR #861 review
+- Confirmed pinned gvmd requires nonempty modify-agent-group name before processing delay.
+- Constructor now takes a name; validation/encoding reject missing or empty names. Updated callers and migration guidance.
+- Stateful mock rejects nameless updates before mutation; regression compares complete response before/after rejected schedule, delay, comment, and membership changes.
+- Optional serde accepts legacy cron strings and current objects while retaining structured serialization, with malformed-input and round-trip tests.
+- Verification: workspace tests with serde and both Unix-socket features passed 1,599 tests across 122 targets (zero failures, one pre-existing ignored doctest). Strict workspace/all-target Clippy with those features passed. Formatting and diff checks passed. No live-server qualification.
