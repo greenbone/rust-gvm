@@ -50,3 +50,5 @@ mod tests {
         assert!(result.is_ok());
     }
 }
+
+mod active_directory;

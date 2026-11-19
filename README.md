@@ -782,11 +782,15 @@ Stopped, and `resume_task` continues that same report.
 
 The mock server is the most developed component. It's designed to be a drop-in test server for any GMP client library — Rust, Python, Go, or shell scripts.
 
+See the [recent GMP feature and mock contract](docs/gmp-feature-mock-contract.md)
+for AD, agent, scanner/target and report coverage, including deliberate
+rejections and fixed-payload boundaries.
+
 ### Server Modes
 
 | Mode | Description |
 |------|-------------|
-| **Echo** | Returns well-formed `<command_response status="200"/>` for any recognized command |
+| **Echo** | Acknowledges recognized commands; unsupported AD operations are deliberately rejected |
 | **Fixture** | Returns pre-built realistic GMP XML from the built-in fixture library |
 | **Stateful** | Bounded in-memory resource behavior with authentication, task lifecycle, and resource relationships; see the support matrix for exact qualifications |
 | **Scenario** | Library-only scripted command→response playback with strict or lenient matching |

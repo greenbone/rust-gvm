@@ -40,7 +40,7 @@ fn pinned_schema_matches_qualified_registry() {
         registry_only.is_empty(),
         "commands marked PinnedSchema but absent from pinned GMP.xml.in: {registry_only:?}"
     );
-    assert_eq!(pinned.len(), 165);
+    assert_eq!(pinned.len(), 166);
 }
 
 #[test]

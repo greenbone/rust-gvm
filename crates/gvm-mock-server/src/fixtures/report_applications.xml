@@ -1,0 +1,9 @@
+<get_report_applications_response status="200" status_text="OK">
+  <applications>
+    <application><name>OpenSSH</name><hosts_count>2</hosts_count><occurrences>5</occurrences><severity>9.8</severity><threat>High</threat></application>
+    <application><name>Legacy application</name><severity>6.5</severity></application>
+    <application><name>Unknown counts</name><hosts_count/><occurrences> </occurrences><severity>4.0</severity><threat/></application>
+    <application><name>Zero counts</name><hosts_count>0</hosts_count><occurrences>0</occurrences><severity>0.0</severity><threat>Log</threat></application>
+  </applications>
+  <report_application_count>4<filtered>4</filtered></report_application_count>
+</get_report_applications_response>

@@ -153,6 +153,7 @@ command_capabilities! {
     ("export_delta_audit_report", Stateful, Some(GmpVersion(22, 7)), PinnedSchema, Help),
     ("export_delta_scan_report", Stateful, Some(GmpVersion(22, 7)), PinnedSchema, Help),
     ("export_scan_report", Stateful, Some(GmpVersion(22, 7)), PinnedSchema, Help),
+    ("get_active_directory_objects", Rejected, None, PinnedSchema, Help),
     ("get_agent_groups", Stateful, Some(GmpVersion(22, 8)), PinnedSchema),
     ("get_agent_installer_instruction", Fixture, Some(GmpVersion(22, 8)), PinnedSchema),
     ("get_agent_inventory_token", Fixture, Some(GmpVersion(22, 8)), PublicSourceOnly, Help),

@@ -3,3 +3,4 @@
 # Schema SHA-256 ce50a9025a2fffbc860d9544d5647bfad87ce9448f98ea411b09dc86492e66e6
 # ENABLE_AD_INTEGRATION; no inferred GMP-version minimum.
 verify_active_directory_credential
+get_active_directory_objects

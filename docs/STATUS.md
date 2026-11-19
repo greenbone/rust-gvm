@@ -44,9 +44,9 @@ The canonical-request program in issue #602 is complete. [ADR 0002](adr/0002-can
 separates fallible typed validation/encoding from raw `Request` and fixes
 execution precedence as validate → semantic support → encode → transport →
 decode. Issue #678 audits the complete exported surface: the checked
-[surface disposition ledger](canonical-request-disposition.md) contains 1,043
-classified rows with zero transitional entries, and all 269 public typed
-facades are enforced as 266 canonical `execute` delegates plus three frozen
+[surface disposition ledger](canonical-request-disposition.md) contains 1,045
+classified rows with zero transitional entries, and all 270 public typed
+facades are enforced as 267 canonical `execute` delegates plus three frozen
 ticket raw paths. The [convergence audit](canonical-request-convergence-audit.md)
 records the reproducible counts and v0.6.0 comparison. The standard target
 family remains the converted reference slice: its six complete requests own
@@ -1000,7 +1000,7 @@ its explicit raw-send compatibility path.
 | Auto version negotiation | ✅ |
 | `GmpVersioned` enum (V224–VNext) | ✅ |
 | `GvmError` with server/connection/parse/timeout/unsupported | ✅ |
-| Typed convenience methods (269 methods, all GMP domains) | ✅ |
+| Typed convenience methods (270 methods, all GMP domains) | ✅ |
 | Version parsing from XML | ✅ |
 | Bounded resource and lifecycle tests | ✅ |
 | Disconnect + error path tests | ✅ |
@@ -1061,3 +1061,15 @@ discovery, not a guessed GMP version gate. The server retains authorization and
 destination-policy decisions; bind passwords remain write-only/redacted. Built-in
 mocks reject live AD operations; explicit fixtures/scenarios model outcomes. See
 [credential evidence](active-directory-credential-gvmd-evidence.md).
+
+AD object discovery now provides canonical selectors and typed collection counts,
+objects, OS/SPNs and target/task/config references without persisting targets.
+Availability requires XML-help discovery; server DN/destination policy is preserved.
+See [discovery evidence](active-directory-discovery-gvmd-evidence.md).
+
+## Recent GMP feature contract
+
+The [feature-level client and mock matrix](gmp-feature-mock-contract.md)
+records all eleven #847–857 slices, their migration/evidence links, capability
+requirements, and the boundary between persisted state, source-shaped fixtures,
+scripted outcomes and live-server behavior. REST delivery is tracked separately.

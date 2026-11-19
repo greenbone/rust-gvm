@@ -308,6 +308,7 @@ builder	crates/gvm-gmp/src/commands/web_application_targets.rs	delete_web_applic
 builder	crates/gvm-gmp/src/commands/web_application_targets.rs	get_web_application_target	removed	Removed by #609; GetWebApplicationTargetRequest owns canonical encoding.
 builder	crates/gvm-gmp/src/commands/web_application_targets.rs	get_web_application_targets	removed	Removed by #609; GetWebApplicationTargetsRequest owns canonical encoding.
 builder	crates/gvm-gmp/src/commands/web_application_targets.rs	modify_web_application_target	removed	Removed by #609; ModifyWebApplicationTargetRequest owns canonical encoding.
+facade	crates/gvm-client/src/typed/active_directory.rs	get_active_directory_objects	retained-construction	Retained for discoverability; accepts the canonical GetActiveDirectoryObjectsRequest unchanged.
 facade	crates/gvm-client/src/typed/agents.rs	clone_agent_group	retained-construction	Retained for discoverability; accepts the canonical CloneAgentGroupRequest unchanged.
 facade	crates/gvm-client/src/typed/agents.rs	create_agent_group	retained-construction	Retained for discoverability; accepts the canonical CreateAgentGroupRequest unchanged.
 facade	crates/gvm-client/src/typed/agents.rs	delete_agent	retained-construction	Retained for discoverability; accepts the canonical DeleteAgentRequest unchanged.
@@ -730,6 +731,7 @@ options	crates/gvm-gmp/src/commands/users.rs	UserOpts	removed	Removed by #636; f
 options	crates/gvm-gmp/src/commands/web_application_targets.rs	CreateWebApplicationTargetOpts	removed	Removed by #609; fields now belong to CreateWebApplicationTargetRequest.
 options	crates/gvm-gmp/src/commands/web_application_targets.rs	GetWebApplicationTargetsOpts	removed	Removed by #609; fields now belong to GetWebApplicationTargetsRequest.
 options	crates/gvm-gmp/src/commands/web_application_targets.rs	ModifyWebApplicationTargetOpts	removed	Removed by #609; fields now belong to ModifyWebApplicationTargetRequest.
+request	crates/gvm-gmp/src/commands/active_directory.rs	GetActiveDirectoryObjectsRequest	canonical-request	Complete discovery input with direct metadata/encoding and typed response.
 request	crates/gvm-gmp/src/commands/agent_groups.rs	CloneAgentGroupRequest	canonical-request	Complete clone input with semantic alias metadata, direct encoding, and typed response.
 request	crates/gvm-gmp/src/commands/agent_groups.rs	CreateAgentGroupRequest	canonical-request	Complete create input with direct metadata/encoding and typed response.
 request	crates/gvm-gmp/src/commands/agent_groups.rs	DeleteAgentGroupRequest	canonical-request	Complete delete input with direct metadata/encoding and typed response.

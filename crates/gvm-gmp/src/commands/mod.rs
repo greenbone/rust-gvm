@@ -3,6 +3,8 @@
 
 //! GMP command builders.
 
+/// Live Active Directory object discovery.
+pub mod active_directory;
 /// Agent group command builders.
 pub mod agent_groups;
 /// Agent command builders.

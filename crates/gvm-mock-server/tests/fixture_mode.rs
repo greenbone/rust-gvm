@@ -227,3 +227,78 @@ async fn build_server(builder: gvm_mock_server::MockGmpServerBuilder) -> Option<
         Err(error) => panic!("server start failed: {error}"),
     }
 }
+
+// Built-in modes must never pretend to contact a directory, even for raw callers
+// that bypass the typed client's capability-discovery checks.
+#[tokio::test]
+async fn builtin_ad_verification_and_discovery_are_explicitly_unavailable() {
+    for mode in [ServerMode::Echo, ServerMode::Fixture, ServerMode::Stateful] {
+        let server = MockGmpServer::builder()
+            .mode(mode)
+            .version(GmpVersion::V22_8)
+            .unix_socket_auto()
+            .build()
+            .await
+            .expect("server");
+        let mut stream = UnixStream::connect(server.socket_path().expect("socket"))
+            .await
+            .expect("connect");
+        for command in [
+            "verify_active_directory_credential",
+            "get_active_directory_objects",
+        ] {
+            let response = Response::new(
+                send_recv(
+                    &mut stream,
+                    format!("<{command} credential_id=\"11111111-1111-4111-8111-111111111111\"/>")
+                        .as_bytes(),
+                )
+                .await,
+            );
+            assert_eq!(response.status_code(), Some(400), "{mode:?}/{command}");
+            assert!(response
+                .as_str()
+                .expect("XML")
+                .contains("Active Directory integration unavailable"));
+        }
+        server.shutdown().await;
+    }
+}
+
+// Scripted outcomes are intentionally programmable and must still bypass the
+// built-in rejection guard. No LDAP network access occurs in this test.
+#[tokio::test]
+async fn ad_scenario_can_supply_explicit_verification_and_discovery_outcomes() {
+    use gvm_mock_server::{ScenarioMode, ScenarioStep};
+    let commands = [
+        "verify_active_directory_credential",
+        "get_active_directory_objects",
+    ];
+    let server = MockGmpServer::builder()
+        .scenario(
+            ScenarioMode::Strict,
+            commands
+                .iter()
+                .map(|command| ScenarioStep {
+                    expect_command: (*command).into(),
+                    respond_xml: Some(format!(
+                        "<{command}_response status=\"200\" status_text=\"Scripted success\"/>"
+                    )),
+                })
+                .collect(),
+        )
+        .unix_socket_auto()
+        .build()
+        .await
+        .expect("server");
+    let mut stream = UnixStream::connect(server.socket_path().expect("socket"))
+        .await
+        .expect("connect");
+    for command in commands {
+        let response =
+            Response::new(send_recv(&mut stream, format!("<{command}/>").as_bytes()).await);
+        assert_eq!(response.status_code(), Some(200));
+        assert!(response.as_str().expect("XML").contains("Scripted success"));
+    }
+    server.shutdown().await;
+}

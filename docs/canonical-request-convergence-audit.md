@@ -8,18 +8,18 @@ comparison baseline is tag `v0.6.0` at
 ## Final surface
 
 The checked disposition inventory, including the additive #762 native-page
-request, #852 inventory-token request/facade, and #847 AD verification, has exactly 1,043 rows:
+request, #852 inventory-token request/facade, and #847/#848 AD commands, has exactly 1,045 rows:
 
 | Disposition | Rows |
 | --- | ---: |
-| `canonical-request` | 424 |
+| `canonical-request` | 425 |
 | `removed` | 475 |
-| `retained-construction` | 132 |
+| `retained-construction` | 133 |
 | `frozen-ticket` | 12 |
 | `transitional` | 0 |
 
-The 424 canonical rows comprise 289 complete request values and 135 typed
-facades. The retained rows comprise 131 request-by-value facade spellings and
+The 425 canonical rows comprise 290 complete request values and 135 typed
+facades. The retained rows comprise 132 request-by-value facade spellings and
 one reusable nested value, `AgentConfigOpts`. Each retained facade accepts a
 canonical request unchanged; source inspection and the enforced facade test
 prove that it delegates exactly once to `execute`. No free builder or options
@@ -33,7 +33,7 @@ ticket surface.
 
 The audit reconciled the 262-method protected baseline and removed the redundant
 `get_credential_stores_with_opts` forwarding alias. The final client has exactly
-269 public typed facade helpers. Of these, 266 accept
+270 public typed facade helpers. Of these, 267 accept
 one complete request and call `execute`; `get_tickets`, `create_ticket`, and
 `modify_ticket` retain their raw paths. Unsupported configuration
 synchronization, operating-system asset modification, `_parsed`, duplicate
