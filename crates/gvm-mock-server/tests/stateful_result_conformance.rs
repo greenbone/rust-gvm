@@ -110,6 +110,8 @@ fn seed_result_graph(store: &ResourceStore) {
     set_result_fields(&mut result, REPORT_1, "192.0.2.10", "8.0", "95");
     result.set_attr("description", "high result");
     result.set_attr("nvt_oid", "1.3.6.1.4.1.25623.1.0.1");
+    result.set_attr("nvt_type", "future-vt&kind");
+    result.set_attr("type_metadata", r#"{"vendor":"a&b"}"#);
     result.set_attr("nvt_name", "High NVT");
     result.set_attr("nvt_family", "General");
     result.set_attr("cves", "CVE-2026-0001,CVE-2026-0002");
@@ -233,6 +235,10 @@ async fn list_detail_context_and_id_selection_follow_result_semantics() {
     assert!(!list.contains(&RESULT_LOW_QOD.to_string()));
     assert!(!list.contains("<task id="));
     assert!(!list.contains("</result>+"));
+    assert!(list.contains("<type>future-vt&amp;kind</type>"));
+    assert!(
+        list.contains(r#"<type_metadata>{&quot;vendor&quot;:&quot;a&amp;b&quot;}</type_metadata>"#)
+    );
     assert!(list.contains("<result_count>3<filtered>2</filtered><page>2</page>"));
     assert!(list.contains("<results start=\"1\" max=\"100\"/>"));
 

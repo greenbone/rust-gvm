@@ -325,7 +325,7 @@ impl FixtureStore {
             "<get_notes_response status=\"200\" status_text=\"OK\">\
              <note id=\"{{uuid}}\">\
              <text>False positive on internal scanner</text>\
-             <nvt oid=\"1.3.6.1.4.1.25623.1.0.100315\"><name>Test NVT</name></nvt>\
+             <nvt oid=\"1.3.6.1.4.1.25623.1.0.100315\"><name>Test NVT</name><type>nvt</type></nvt>\
              <creation_time>{{now}}</creation_time>\
              <modification_time>{{now}}</modification_time>\
              </note>\
@@ -340,7 +340,7 @@ impl FixtureStore {
             "<get_overrides_response status=\"200\" status_text=\"OK\">\
              <override id=\"{{uuid}}\">\
              <text>Downgrade to log</text>\
-             <nvt oid=\"1.3.6.1.4.1.25623.1.0.100315\"><name>Test NVT</name></nvt>\
+             <nvt oid=\"1.3.6.1.4.1.25623.1.0.100315\"><name>Test NVT</name><type>nvt</type></nvt>\
              <new_severity>0.0</new_severity>\
              <creation_time>{{now}}</creation_time>\
              <modification_time>{{now}}</modification_time>\

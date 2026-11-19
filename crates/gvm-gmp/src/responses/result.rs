@@ -41,6 +41,10 @@ pub struct NvtRef {
     #[cfg_attr(feature = "serde", serde(default))]
     pub refs: Vec<NvtReferenceEntry>,
     pub tags: Option<String>,
+    /// Server-provided VT discriminator; unknown future values are preserved.
+    /// Missing values remain `None`, never implicitly `nvt`.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub type_: Option<String>,
     /// Type-specific metadata emitted by gvmd, commonly a JSON object.
     pub type_metadata: Option<String>,
     /// EPSS metadata when gvmd has EPSS data for this NVT.
@@ -92,6 +96,7 @@ impl ScanResult {
                         cves: parse_nvt_cves(nvt),
                         refs: parse_nvt_reference_entries(nvt),
                         tags: nvt.optional_child_text("tags"),
+                        type_: nvt.optional_child_text("type"),
                         type_metadata: nvt.optional_child_text("type_metadata"),
                         epss: parse_epss(nvt)?,
                     })

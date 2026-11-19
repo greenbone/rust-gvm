@@ -130,5 +130,31 @@ fn legacy_serde_payloads_without_refs_default_to_empty_collections() {
     .expect("legacy Nvt JSON deserializes");
 
     assert!(result_nvt.refs.is_empty());
+    assert!(result_nvt.type_.is_none());
     assert!(catalog_nvt.refs.is_empty());
+}
+
+#[test]
+fn result_vt_type_is_lossless_and_independent_of_metadata() {
+    for vt_type in [Some("nvt"), Some("cve"), Some("future-vt:42"), None] {
+        let type_xml = vt_type
+            .map(|value| format!("<type>{value}</type>"))
+            .unwrap_or_default();
+        let xml = format!(
+            r#"<get_results_response status="200" status_text="OK"><result id="r"><nvt oid="1">{type_xml}<type_metadata>{{"vendor":"a&amp;b","nested":[1,true]}}</type_metadata></nvt></result></get_results_response>"#
+        );
+        let parsed = GetResultsResponse::from_response(&Response::from(xml.as_str())).unwrap();
+        let nvt = parsed.items[0].nvt.as_ref().unwrap();
+        assert_eq!(nvt.type_.as_deref(), vt_type);
+        assert_eq!(
+            nvt.type_metadata.as_deref(),
+            Some(r#"{"vendor":"a&b","nested":[1,true]}"#)
+        );
+        #[cfg(feature = "serde")]
+        {
+            let json = serde_json::to_string(nvt).unwrap();
+            let restored: gvm_gmp::responses::NvtRef = serde_json::from_str(&json).unwrap();
+            assert_eq!(&restored, nvt);
+        }
+    }
 }
