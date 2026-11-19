@@ -64,7 +64,7 @@ fn agent_groups_validate_and_encode_zero_and_maximum_delays() {
         let mut create = CreateAgentGroupRequest::new("Group", vec![], "0 */6 * * *");
         create.max_delay_seconds = delay;
         let mut modify =
-            ModifyAgentGroupRequest::new(EntityId::new("group-1").unwrap(), "0 */6 * * *");
+            ModifyAgentGroupRequest::new(EntityId::new("group-1").unwrap(), "Group", "0 */6 * * *");
         modify.max_delay_seconds = delay;
         for request in [&create as &dyn GmpRequestCodec, &modify] {
             let encoded = request.encode(GmpVersion(22, 8));

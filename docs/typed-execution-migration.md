@@ -173,8 +173,7 @@ create.comment = Some("production agents".into());
 let created = client.create_agent_group(create).await?;
 
 let mut modify =
-    ModifyAgentGroupRequest::new(created.id, "0 */10 * * *");
-modify.name = Some("renamed agents".into());
+    ModifyAgentGroupRequest::new(created.id, "renamed agents", "0 */10 * * *");
 modify.agent_ids = CollectionUpdate::replace([replacement_agent_id]);
 client.modify_agent_group(modify).await?;
 # Ok::<(), Box<dyn std::error::Error>>(())

@@ -17,6 +17,9 @@ The previous text-only item encoding does not configure current gvmd correctly.
 Legacy text-only response entries remain readable with no delay; there is no
 legacy encoder or inferred server-version downgrade. Empty cron observations
 remain empty rather than disappearing. Cron interpretation remains server-owned.
+With optional `serde`, persisted arrays of cron strings remain readable alongside
+structured objects. Serialization emits structured objects; omitted/null delay
+stays `None`, distinct from zero. Malformed objects are rejected.
 
 Agent-group create and modify expose `max_delay_seconds: Option<u32>` and reads
 preserve the optional value. Both group mutations and agent/default scheduler
@@ -24,6 +27,16 @@ mutations validate the final request delay against `0..=2147483647` before
 encoding or transport. On group modification, omitted delay **resets to zero**
 in pinned gvmd; it does not preserve an earlier delay. Set the observed delay
 explicitly when retaining it is intended.
+
+Group modification also requires a nonempty name, including delay-only or
+membership-only updates. Migrate
+`ModifyAgentGroupRequest::new(id, cron)` to
+`ModifyAgentGroupRequest::new(id, name, cron)`; pass the observed group name
+when no rename is intended. The public optional name field is retained for
+direct field updates, but `None` and an empty string fail validation and
+encoding. The stateful mock rejects missing/empty names before changing any
+stored fields. This follows the name check in pinned
+[`gmp_agent_groups.c`](https://github.com/greenbone/gvmd/blob/150a4cfad39d00f45ef147c35e1a5f27f415c8e9/src/gmp_agent_groups.c#L726-L733).
 
 `Scanner::agent_control_config_defaults` retains the optional `agent_defaults`
 configuration and `update_to_latest`. The same scheduler parser handles agent

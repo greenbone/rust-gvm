@@ -3979,7 +3979,11 @@ async fn distinct_registry_and_semantic_version_gates_fail_before_transport_send
         "22.8"
     );
     assert_unsupported_command!(
-        v227_client.execute(ModifyAgentGroupRequest::new(id("group-1"), "0 */5 * * *")),
+        v227_client.execute(ModifyAgentGroupRequest::new(
+            id("group-1"),
+            "Group",
+            "0 */5 * * *"
+        )),
         "modify_agent_group",
         GmpVersion(22, 7),
         "22.8"
