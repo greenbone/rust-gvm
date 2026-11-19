@@ -161,3 +161,10 @@ AD object discovery now provides canonical selectors and typed collection counts
 objects, OS/SPNs and target/task/config references without persisting targets.
 Availability requires XML-help discovery; server DN/destination policy is preserved.
 See [discovery evidence](active-directory-discovery-gvmd-evidence.md).
+
+## Recent GMP feature contract
+
+The [feature-level client and mock matrix](gmp-feature-mock-contract.md)
+records all eleven #847–857 slices, their migration/evidence links, capability
+requirements, and the boundary between persisted state, source-shaped fixtures,
+scripted outcomes and live-server behavior. REST delivery is tracked separately.
