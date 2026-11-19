@@ -69,3 +69,15 @@ Current gvmd `150a4cfad39d00f45ef147c35e1a5f27f415c8e9`,
 optional strings. Missing, empty, and whitespace-only children decode to
 `None`; no OS or status is inferred. The server-shaped
 `agent_os_metadata.xml` fixture covers populated and unknown/legacy responses.
+
+## Support-bundle anonymization (#854)
+
+At gvmd `150a4cfad39d00f45ef147c35e1a5f27f415c8e9`,
+`src/gmp_agent_support_bundle.c:277–302` defaults encryption to 1 and
+anonymization to 0. `GetAgentSupportBundleRequest::anonymized` is an
+`Option<bool>`: `None` omits the attribute, and explicit false/true encode as
+`anonymized="0"`/`anonymized="1"`. Encryption remains independently optional.
+All nine omission/boolean combinations are codec-tested. The versioned client
+round trip checks anonymization alongside disabled encryption in mock command
+history; mock bundle bytes remain an inert fixed fixture, not evidence of
+actual encryption or anonymization. Existing command version gates are unchanged.

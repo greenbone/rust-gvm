@@ -950,6 +950,7 @@ async fn next_client_agent_commands_round_trip() {
     let mut support_bundle_request =
         GetAgentSupportBundleRequest::new(agent_ids[0].clone(), Some(7));
     support_bundle_request.encryption = Some(false);
+    support_bundle_request.anonymized = Some(true);
     let bundle = client
         .get_agent_support_bundle(support_bundle_request)
         .await
@@ -964,7 +965,7 @@ async fn next_client_agent_commands_round_trip() {
     assert_eq!(history[0].command_name(), "get_agent_support_bundle");
     assert_eq!(
         history[0].raw_xml(),
-        br#"<get_agent_support_bundle agent_uuid="00000000-0000-0000-0000-000000000002" days="7" encryption="0"/>"#
+        br#"<get_agent_support_bundle agent_uuid="00000000-0000-0000-0000-000000000002" anonymized="1" days="7" encryption="0"/>"#
     );
 
     let delete = client

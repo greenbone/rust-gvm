@@ -334,6 +334,8 @@ pub struct GetAgentSupportBundleRequest {
     ///
     /// Omission leaves gvmd's encrypted-by-default behavior in effect.
     pub encryption: Option<bool>,
+    /// Whether gvmd should anonymize the bundle. Omission uses the server default (false).
+    pub anonymized: Option<bool>,
 }
 
 impl GetAgentSupportBundleRequest {
@@ -344,6 +346,7 @@ impl GetAgentSupportBundleRequest {
             agent_uuid,
             days,
             encryption: None,
+            anonymized: None,
         }
     }
 }
@@ -434,6 +437,9 @@ fn get_agent_support_bundle_command(request: &GetAgentSupportBundleRequest) -> X
     }
     if let Some(encryption) = request.encryption {
         cmd.set_attribute("encryption", bool_str(encryption));
+    }
+    if let Some(anonymized) = request.anonymized {
+        cmd.set_attribute("anonymized", bool_str(anonymized));
     }
     cmd
 }
@@ -626,6 +632,26 @@ mod tests {
             request_xml(&GetAgentSupportBundleRequest::new(id("agent-1"), None)),
             "<get_agent_support_bundle agent_uuid=\"agent-1\"/>"
         );
+    }
+
+    #[test]
+    fn support_bundle_preserves_optional_boolean_combinations() {
+        for encryption in [None, Some(false), Some(true)] {
+            for anonymized in [None, Some(false), Some(true)] {
+                let mut request = GetAgentSupportBundleRequest::new(id("agent-1"), None);
+                request.encryption = encryption;
+                request.anonymized = anonymized;
+                let xml = request_xml(&request);
+                for (name, value) in [("encryption", encryption), ("anonymized", anonymized)] {
+                    match value {
+                        Some(value) => {
+                            assert!(xml.contains(&format!("{name}=\"{}\"", u8::from(value))));
+                        }
+                        None => assert!(!xml.contains(name)),
+                    }
+                }
+            }
+        }
     }
 
     #[test]
