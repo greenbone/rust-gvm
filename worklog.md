@@ -81,3 +81,8 @@
 - Head 64b9d018 completed checks green so far; all-features, coverage and Geiger pending. No failed checks observed.
 - Independent source review found strict/legacy quote mismatch: gvmd recognizes only boundary double quotes and no backslash escapes. Added regression demonstrating old helper accepted hidden `_and_report_id`; strict-only mask now follows pinned split_filter states, preserving legacy API behavior. New regressions cover both inputs, pagination, inclusive operators, embedded quotes, apostrophes and trailing backslashes.
 - Verification: 40 focused tests passed (23 legacy filtering, 5 strict helper, 6 enabled mock, 6 typed client); fmt/diff checks and strict GMP library/helper-target Clippy passed. Original head CI and Security workflows both completed SUCCESS. No merge requested/performed.
+
+## Issue #876 typed inventory-token validation
+- Reject empty/self-closing/whitespace-only successful token payloads in the owning GMP parser with redacted InvalidValue; preserve existing decoding and opaque nonempty values.
+- Six GMP token tests and four all-feature typed-client token tests passed; strict workspace/all-target/all-feature Clippy and fmt check passed.
+- Based on fa990ad (PR #872 protected-filter accepted tip); incremental PR targets b02/protected-report-filter to retain that helper without duplicating its diff. No merge authorized or performed.

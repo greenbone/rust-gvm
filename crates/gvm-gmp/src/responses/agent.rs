@@ -402,10 +402,18 @@ impl GetAgentInventoryTokenResponse {
     pub fn from_response(response: &Response) -> Result<Self, ParseError> {
         let (status, status_text) = status_from_response(response)?;
         let root = parse_document(response.data())?;
+        let token = root.required_child_text("token")?;
+        // Validate without changing the opaque credential or exposing it in diagnostics.
+        if token.trim().is_empty() {
+            return Err(ParseError::InvalidValue {
+                field: "token".into(),
+                value: "[REDACTED]".into(),
+            });
+        }
         Ok(Self {
             status,
             status_text,
-            token: AgentInventoryToken(root.required_child_text("token")?),
+            token: AgentInventoryToken(token),
         })
     }
 }
