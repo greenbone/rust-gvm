@@ -110,6 +110,178 @@ pub enum FilterFragmentError {
     },
 }
 
+/// Errors from strict report-result filter composition (legacy helpers remain permissive).
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum ReportResultsFilterError {
+    /// The report identifier is invalid (including unchecked deserialized values).
+    #[error("invalid report identifier: {0}")]
+    InvalidReportId(#[from] crate::types::EntityIdError),
+    /// A caller attempted to replace endpoint-owned scope or pagination.
+    #[error(transparent)]
+    Fragment(#[from] FilterFragmentError),
+    /// gvmd supports single-character relations, not inclusive or compound comparisons.
+    #[error("unsupported or malformed filter comparator near byte {offset}; use a single =, >, <, ~ or : relation (>= and <= are not supported by gvmd)")]
+    Comparator {
+        /// Byte offset of the invalid comparator.
+        offset: usize,
+    },
+    /// A quoted literal was not closed.
+    #[error("unterminated quoted filter literal")]
+    UnterminatedQuote,
+}
+
+/// Compose a strict, report-isolated result filter with endpoint-owned pagination.
+///
+/// `saved_filter` is resolved saved-filter **term text**, not its identifier. Pass
+/// the returned text as `GetResultsRequest.filter_string` with `filter_id: None`:
+/// gvmd otherwise replaces inline text with the saved filter. Both fragments are
+/// validated independently. Boolean predicates retain gvmd's own semantics;
+/// report isolation uses its independent report restriction, not a boolean term.
+/// This is not a full filter grammar validator: unknown fields remain gvmd-owned.
+///
+/// # Errors
+/// Rejects caller scope/pagination controls, unsupported compound comparators,
+/// and unterminated quoted literals. Existing raw helpers remain unchanged.
+pub fn compose_report_results_filter(
+    report_id: &crate::types::EntityId,
+    saved_filter: Option<&str>,
+    inline_filter: Option<&str>,
+    pagination: Pagination,
+) -> Result<String, ReportResultsFilterError> {
+    crate::types::EntityId::new(report_id.as_str())?;
+    let mut clauses = Vec::new();
+    for fragment in [saved_filter, inline_filter].into_iter().flatten() {
+        let visible = strict_visible_filter(fragment)?;
+        FilterFragment::new(
+            visible.as_str(),
+            &[
+                "report_id",
+                "_report_id",
+                "_and_report_id",
+                "__and_report_id",
+                "_first",
+                "_rows",
+                "max",
+                "offset",
+                "limit",
+                "page",
+                "per_page",
+                "ignore_pagination",
+                "_ignore_pagination",
+            ],
+        )?;
+        validate_strict_comparators(&visible)?;
+        if !fragment.trim().is_empty() {
+            clauses.push(fragment.trim().to_string());
+        }
+    }
+    let (first, rows) = pagination.gvmd_window();
+    clauses.push(format!(
+        "_and_report_id={report_id} first={first} rows={rows}"
+    ));
+    Ok(clauses.join(" "))
+}
+
+// Mask only literals recognized by pinned gvmd split_filter. In particular,
+// apostrophes and backslashes are ordinary bytes, and embedded double quotes
+// are not openers. Keep byte offsets stable for comparator diagnostics. Do not
+// change legacy FilterFragment's historical quoting/escaping contract.
+fn strict_visible_filter(fragment: &str) -> Result<String, ReportResultsFilterError> {
+    let mut visible = fragment.as_bytes().to_vec();
+    let mut quoted = false;
+    let mut between = true;
+    let mut column = false;
+    let mut prefix = false;
+    let mut value_start = 0;
+    for (offset, byte) in fragment.bytes().enumerate() {
+        if quoted {
+            visible[offset] = b'x';
+            if byte == b'"' {
+                quoted = false;
+                between = true;
+                visible[offset] = b' ';
+            }
+            continue;
+        }
+        match byte {
+            b'"' => {
+                if between || ((column || prefix) && offset == value_start) {
+                    quoted = true;
+                    between = false;
+                    column = false;
+                    prefix = false;
+                }
+                visible[offset] = b'x';
+            }
+            b'\'' => {
+                visible[offset] = b'x';
+                if between {
+                    between = false;
+                    column = false;
+                    prefix = false;
+                }
+            }
+            b' ' | b'\t' | b'\n' | b'\r' => between = true,
+            b'=' | b'~' if between => {
+                between = false;
+                column = false;
+                prefix = true;
+                value_start = offset + 1;
+            }
+            b'=' | b'~' | b':' | b'>' | b'<' => {
+                if between {
+                    between = false;
+                    column = false;
+                    prefix = false;
+                } else if !column {
+                    column = true;
+                    value_start = offset + 1;
+                }
+            }
+            _ if between => {
+                between = false;
+                column = false;
+                prefix = false;
+            }
+            _ => {}
+        }
+    }
+    if quoted {
+        return Err(ReportResultsFilterError::UnterminatedQuote);
+    }
+    // Replacing entire quoted UTF-8 spans with ASCII preserves valid UTF-8.
+    Ok(String::from_utf8(visible).expect("masked UTF-8 filter"))
+}
+
+fn validate_strict_comparators(fragment: &str) -> Result<(), ReportResultsFilterError> {
+    let mut previous_nonspace = None;
+    let mut token_operator = false;
+    for (offset, byte) in fragment.bytes().enumerate() {
+        if byte.is_ascii_whitespace() {
+            token_operator = false;
+            continue;
+        }
+        if matches!(byte, b'=' | b'>' | b'<' | b'~' | b':' | b'!') {
+            if byte == b'!'
+                || token_operator
+                || previous_nonspace.is_some_and(|previous| {
+                    matches!(previous, b'=' | b'>' | b'<' | b'~' | b':' | b'!')
+                })
+            {
+                return Err(ReportResultsFilterError::Comparator { offset });
+            }
+            token_operator = true;
+        }
+        previous_nonspace = Some(byte);
+    }
+    if previous_nonspace.is_some_and(|byte| matches!(byte, b'=' | b'>' | b'<' | b'~' | b':')) {
+        return Err(ReportResultsFilterError::Comparator {
+            offset: fragment.len().saturating_sub(1),
+        });
+    }
+    Ok(())
+}
+
 /// Builder for gvmd filter strings that append pagination terms centrally.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PaginatedFilter {
@@ -291,7 +463,7 @@ fn skip_grouping_and_whitespace(bytes: &[u8], mut index: usize) -> usize {
 }
 
 fn is_operator_byte(byte: u8) -> bool {
-    matches!(byte, b'=' | b'<' | b'>' | b'~')
+    matches!(byte, b'=' | b'<' | b'>' | b'~' | b':')
 }
 
 #[cfg(test)]

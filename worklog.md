@@ -64,3 +64,20 @@
 - Integrated both #861/#866 review corrections through all six upper branches without rewriting published history; exact branch heads saved in review-restack.json.
 - Full combined workspace verification with serde and socket tests: 1,634 passed across 128 targets, zero failures, one pre-existing ignored doctest. Strict socket-enabled workspace/all-target Clippy, formatting and diff checks passed.
 - Documentation matrix links APIs, feature evidence and mock limits; downstream REST contract supplement remains explicitly planned, not an implemented OpenAPI claim.
+# Protected report-result filtering (#871 / API #741)
+
+- Created isolated worktree at b6f33da (PR #868 stack), branch b02/protected-report-filter.
+- Read repository guidance and pinned gvmd gmp.c independent `_and_report_id` restriction and manage_filter_utils single-character relations.
+- New additive helper interface written early to /workspace/reviews/api-727-742/upstream-filter-interface.md; returns Result<String, ReportResultsFilterError> (always nonempty scope+window), no existing error/request/facade shape changes.
+- Implementing strict fragment boundary and bounded mock OR/report restriction tests. No live gvmd qualification claimed.
+
+- Implemented `compose_report_results_filter(&EntityId, Option<&str>, Option<&str>, Pagination) -> Result<String, ReportResultsFilterError>` plus pinned source/bounded-model documentation.
+- Revalidates EntityId; quote-aware strict boundary rejects scope and pagination overrides including gvmd underscore aliases, unsupported compound/inclusive operators and unclosed literals. No request/facade changes.
+- Corrected bounded result mock to source-supported default OR / explicit AND groups, with protected report restriction evaluated independently before counts/paging.
+- Verification: GMP filtering unit tests (23), result request tests (7), new strict composition tests (4), stateful result conformance (6), typed client result integration (6); fmt check and strict focused Clippy on all touched libraries/test targets passed. Broad all-target Clippy additionally attempted and blocked by pre-existing missing crate docs in agent_schedule_serde_test.rs; no unrelated file modified. Existing manifest unused-workspace-dependency warnings remain.
+- Tests use /workspace/866-test-env with CARGO_TARGET_DIR=/workspace/.cache/upstream-filter-target. No live gvmd qualification.
+
+## PR #872 exact-head security review
+- Head 64b9d018 completed checks green so far; all-features, coverage and Geiger pending. No failed checks observed.
+- Independent source review found strict/legacy quote mismatch: gvmd recognizes only boundary double quotes and no backslash escapes. Added regression demonstrating old helper accepted hidden `_and_report_id`; strict-only mask now follows pinned split_filter states, preserving legacy API behavior. New regressions cover both inputs, pagination, inclusive operators, embedded quotes, apostrophes and trailing backslashes.
+- Verification: 40 focused tests passed (23 legacy filtering, 5 strict helper, 6 enabled mock, 6 typed client); fmt/diff checks and strict GMP library/helper-target Clippy passed. Original head CI and Security workflows both completed SUCCESS. No merge requested/performed.
